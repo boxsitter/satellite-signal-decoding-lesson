@@ -1,0 +1,1121 @@
+<!DOCTYPE html>
+<html lang="en" itemscope="" itemtype="http://schema.org/WebPage" data-darkreader-mode="dynamic" data-darkreader-scheme="dark"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8"><style class="darkreader darkreader--fallback" media="screen"></style><style class="darkreader darkreader--user-agent" media="screen">@layer {
+html {
+    background-color: var(--darkreader-background-ffffff, #181a1b) !important;
+}
+html {
+    color-scheme: dark !important;
+}
+iframe {
+    color-scheme: dark !important;
+}
+html, body {
+    background-color: var(--darkreader-background-ffffff, #181a1b);
+}
+html, body {
+    border-color: var(--darkreader-border-4c4c4c, #736b5e);
+    color: var(--darkreader-text-000000, #e8e6e3);
+}
+a {
+    color: var(--darkreader-text-0040ff, #3391ff);
+}
+table {
+    border-color: var(--darkreader-border-808080, #545b5e);
+}
+mark {
+    color: var(--darkreader-text-000000, #e8e6e3);
+}
+::placeholder {
+    color: var(--darkreader-text-a9a9a9, #b2aba1);
+}
+input:-webkit-autofill,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+    background-color: var(--darkreader-background-faffbd, #404400) !important;
+    color: var(--darkreader-text-000000, #e8e6e3) !important;
+}
+::selection {
+    background-color: var(--darkreader-background-0060d4, #004daa) !important;
+    color: var(--darkreader-text-ffffff, #e8e6e3) !important;
+}
+::-moz-selection {
+    background-color: var(--darkreader-background-0060d4, #004daa) !important;
+    color: var(--darkreader-text-ffffff, #e8e6e3) !important;
+}
+}</style><style class="darkreader darkreader--text" media="screen"></style><style class="darkreader darkreader--invert" media="screen">.jfk-bubble.gtx-bubble, .captcheck_answer_label > input + img, span#closed_text > img[src^="https://www.gstatic.com/images/branding/googlelogo"], span[data-href^="https://www.hcaptcha.com/"] > #icon, img.Wirisformula, a[data-testid="headerMediumLogo"]>svg, .d2l-navigation-link-image-container, .d2l-iframe-loading-container {
+    filter: invert(100%) hue-rotate(180deg) contrast(90%) !important;
+}</style><style class="darkreader darkreader--inline" media="screen">[data-darkreader-inline-bgcolor] {
+  background-color: var(--darkreader-inline-bgcolor) !important;
+}
+[data-darkreader-inline-bgimage] {
+  background-image: var(--darkreader-inline-bgimage) !important;
+}
+[data-darkreader-inline-border] {
+  border-color: var(--darkreader-inline-border) !important;
+}
+[data-darkreader-inline-border-bottom] {
+  border-bottom-color: var(--darkreader-inline-border-bottom) !important;
+}
+[data-darkreader-inline-border-left] {
+  border-left-color: var(--darkreader-inline-border-left) !important;
+}
+[data-darkreader-inline-border-right] {
+  border-right-color: var(--darkreader-inline-border-right) !important;
+}
+[data-darkreader-inline-border-top] {
+  border-top-color: var(--darkreader-inline-border-top) !important;
+}
+[data-darkreader-inline-boxshadow] {
+  box-shadow: var(--darkreader-inline-boxshadow) !important;
+}
+[data-darkreader-inline-color] {
+  color: var(--darkreader-inline-color) !important;
+}
+[data-darkreader-inline-fill] {
+  fill: var(--darkreader-inline-fill) !important;
+}
+[data-darkreader-inline-stroke] {
+  stroke: var(--darkreader-inline-stroke) !important;
+}
+[data-darkreader-inline-outline] {
+  outline-color: var(--darkreader-inline-outline) !important;
+}
+[data-darkreader-inline-stopcolor] {
+  stop-color: var(--darkreader-inline-stopcolor) !important;
+}
+[data-darkreader-inline-bg] {
+  background: var(--darkreader-inline-bg) !important;
+}
+[data-darkreader-inline-border-short] {
+  border: var(--darkreader-inline-border-short) !important;
+}
+[data-darkreader-inline-border-bottom-short] {
+  border-bottom: var(--darkreader-inline-border-bottom-short) !important;
+}
+[data-darkreader-inline-border-left-short] {
+  border-left: var(--darkreader-inline-border-left-short) !important;
+}
+[data-darkreader-inline-border-right-short] {
+  border-right: var(--darkreader-inline-border-right-short) !important;
+}
+[data-darkreader-inline-border-top-short] {
+  border-top: var(--darkreader-inline-border-top-short) !important;
+}
+[data-darkreader-inline-invert] {
+    filter: invert(100%) hue-rotate(180deg);
+}</style><style class="darkreader darkreader--variables" media="screen">:root {
+   --darkreader-neutral-background: var(--darkreader-background-ffffff, #181a1b);
+   --darkreader-neutral-text: var(--darkreader-text-000000, #e8e6e3);
+   --darkreader-selection-background: var(--darkreader-background-0060d4, #004daa);
+   --darkreader-selection-text: var(--darkreader-text-ffffff, #e8e6e3);
+}</style><style class="darkreader darkreader--root-vars" media="screen"></style>
+    
+
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+
+  <title>Manually Decoding a NOAA APT Transmission - Charles Mercieca</title>
+  <meta name="description" content="I’ve been playing around with a software-defined radio dongle lately, and one of the most satisfying things they let you do is receive weather satellite transmissions. NOAA in particular still has 3 functioning, albeit now relatively outdated, satellites constantly transmitting data.
+Getting the WAV file The hands-on part is relatively basic: plug-in a V-dipole antenna into your SDR dongle, face the antenna North, use your favourite satellite tracker to work out the time a satellite will be over you, tune in to it’s frequency, and save the recording (in my case using SDR++)."><script async="" src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/google-analytics_analytics.js"></script><script async="" src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/google-analytics_analytics.js"></script><script async="" src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/google-analytics_analytics.js"></script><script type="application/ld+json">
+{
+    "@context": "http://schema.org",
+    "@type": "WebSite",
+    "name": "Charles Mercieca",
+    
+    "url": "https:\/\/www.charlesmercieca.com\/"
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Organization",
+  "name": "",
+  "url": "https:\/\/www.charlesmercieca.com\/"
+  
+  
+  
+  
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [{
+        "@type": "ListItem",
+        "position": 1,
+        "item": {
+          "@id": "https:\/\/www.charlesmercieca.com\/",
+          "name": "home"
+        }
+    },{
+        "@type": "ListItem",
+        "position": 3,
+        "item": {
+          "@id": "https:\/\/www.charlesmercieca.com\/post\/2024-11-23-manually-decoding-a-noaa-apt-transmission\/",
+          "name": "Manually decoding a noaa apt transmission"
+        }
+    }]
+}
+</script><script type="application/ld+json">
+{
+  "@context": "http://schema.org",
+  "@type": "Article",
+  "author": {
+    "name" : ""
+  },
+  "headline": "Manually Decoding a NOAA APT Transmission",
+  "description" : "I’ve been playing around with a software-defined radio dongle lately, and one of the most satisfying things they let you do is receive weather satellite transmissions. NOAA in particular still has 3 functioning, albeit now relatively outdated, satellites constantly transmitting data.\nGetting the WAV file The hands-on part is relatively basic: plug-in a V-dipole antenna into your SDR dongle, face the antenna North, use your favourite satellite tracker to work out the time a satellite will be over you, tune in to it’s frequency, and save the recording (in my case using SDR\u002b\u002b).",
+  "inLanguage" : "en",
+  "wordCount":  1727 ,
+  "datePublished" : "2024-11-23T00:00:00",
+  "dateModified" : "2024-11-23T00:00:00",
+  "image" : "https:\/\/www.charlesmercieca.com\/img\/avatar-icon.png",
+  "keywords" : [ "" ],
+  "mainEntityOfPage" : "https:\/\/www.charlesmercieca.com\/post\/2024-11-23-manually-decoding-a-noaa-apt-transmission\/",
+  "publisher" : {
+    "@type": "Organization",
+    "name" : "https:\/\/www.charlesmercieca.com\/",
+    "logo" : {
+        "@type" : "ImageObject",
+        "url" : "https:\/\/www.charlesmercieca.com\/img\/avatar-icon.png",
+        "height" :  60 ,
+        "width" :  60
+    }
+  }
+}
+</script>
+
+<meta property="og:title" content="Manually Decoding a NOAA APT Transmission">
+<meta property="og:description" content="I’ve been playing around with a software-defined radio dongle lately, and one of the most satisfying things they let you do is receive weather satellite transmissions. NOAA in particular still has 3 functioning, albeit now relatively outdated, satellites constantly transmitting data.
+Getting the WAV file The hands-on part is relatively basic: plug-in a V-dipole antenna into your SDR dongle, face the antenna North, use your favourite satellite tracker to work out the time a satellite will be over you, tune in to it’s frequency, and save the recording (in my case using SDR++).">
+<meta property="og:image" content="https://www.charlesmercieca.com/img/avatar-icon.png">
+<meta property="og:url" content="https://www.charlesmercieca.com/post/2024-11-23-manually-decoding-a-noaa-apt-transmission/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Charles Mercieca">
+
+  <meta name="twitter:title" content="Manually Decoding a NOAA APT Transmission">
+  <meta name="twitter:description" content="I’ve been playing around with a software-defined radio dongle lately, and one of the most satisfying things they let you do is receive weather satellite transmissions. NOAA in particular still has 3 …">
+  <meta name="twitter:image" content="https://www.charlesmercieca.com/img/avatar-icon.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:site" content="@Charles_Merc">
+  <meta name="twitter:creator" content="@Charles_Merc">
+  <link href="https://www.charlesmercieca.com/img/favicon.ico" rel="icon" type="image/x-icon">
+  <meta name="generator" content="Hugo 0.81.0">
+  <link rel="alternate" href="https://www.charlesmercieca.com/index.xml" type="application/rss+xml" title="Charles Mercieca"><link rel="stylesheet" href="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/katex.min.css" integrity="sha384-9eLZqc9ds8eNjO3TmqPeYcDj8n+Qfa4nuSiGYa6DjLNcv9BtN69ZIulL9+8CqC9Y" crossorigin="anonymous"><style class="darkreader darkreader--sync" media="screen"></style>
+  <link rel="stylesheet" href="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/all.css" integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous"><style class="darkreader darkreader--sync" media="screen"></style>
+  <link rel="stylesheet" href="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"><style class="darkreader darkreader--sync" media="screen"></style><link rel="stylesheet" href="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/main.css"><style class="darkreader darkreader--sync" media="screen"></style><link rel="stylesheet" href="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/css.css">
+  <link rel="stylesheet" href="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/css_002.css">
+  <link rel="stylesheet" href="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/highlight.min.css"><style class="darkreader darkreader--sync" media="screen"></style><link rel="stylesheet" href="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/codeblock.css"><style class="darkreader darkreader--sync" media="screen"></style><link rel="stylesheet" href="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/photoswipe.min.css" integrity="sha384-h/L2W9KefUClHWaty3SLE5F/qvc4djlyR4qY3NUV5HGQBBW7stbcfff1+I/vmsHh" crossorigin="anonymous"><style class="darkreader darkreader--sync" media="screen"></style>
+  <link rel="stylesheet" href="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/default-skin.min.css" integrity="sha384-iD0dNku6PYSIQLyfTOpB06F2KCZJAKLOThS5HRe8b3ibhdEQ6eKsFf/EeFxdOt5R" crossorigin="anonymous"><style class="darkreader darkreader--sync" media="screen"></style>
+
+
+
+  
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'G-LT97C635PC', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script><meta name="darkreader" content="c187352bf8b24ab9a02d5f0d2ea1767c"><style class="darkreader darkreader--override" media="screen">.vimvixen-hint {
+    background-color: var(--darkreader-background-ffd76e, #684b00) !important;
+    border-color: var(--darkreader-background-c59d00, #9e7e00) !important;
+    color: var(--darkreader-text-302505, #d7d4cf) !important;
+}
+#vimvixen-console-frame {
+    color-scheme: light !important;
+}
+::placeholder {
+    opacity: 0.5 !important;
+}
+#edge-translate-panel-body,
+.MuiTypography-body1,
+.nfe-quote-text {
+    color: var(--darkreader-neutral-text) !important;
+}
+gr-main-header {
+    background-color: var(--darkreader-background-add8e6, #1b4958) !important;
+}
+.tou-z65h9k,
+.tou-mignzq,
+.tou-1b6i2ox,
+.tou-lnqlqk {
+    background-color: var(--darkreader-neutral-background) !important;
+}
+.tou-75mvi {
+    background-color: var(--darkreader-background-cfecf5, #0f3a47) !important;
+}
+.tou-ta9e87,
+.tou-1w3fhi0,
+.tou-1b8t2us,
+.tou-py7lfi,
+.tou-1lpmd9d,
+.tou-1frrtv8,
+.tou-17ezmgn {
+    background-color: var(--darkreader-background-f5f5f5, #1e2021) !important;
+}
+.tou-uknfeu {
+    background-color: var(--darkreader-background-faedda, #432c09) !important;
+}
+.tou-6i3zyv {
+    background-color: var(--darkreader-background-85c3d8, #245d70) !important;
+}
+div.mermaid-viewer-control-panel .btn {
+    background-color: var(--darkreader-neutral-background);
+    fill: var(--darkreader-neutral-text);
+}
+svg g rect.er {
+    fill: var(--darkreader-neutral-background) !important;
+}
+svg g rect.er.entityBox {
+    fill: var(--darkreader-neutral-background) !important;
+}
+svg g rect.er.attributeBoxOdd {
+    fill: var(--darkreader-neutral-background) !important;
+}
+svg g rect.er.attributeBoxEven {
+    fill: var(--darkreader-selection-background);
+    fill-opacity: 0.8 !important;
+}
+svg rect.er.relationshipLabelBox {
+    fill: var(--darkreader-neutral-background) !important;
+}
+svg g g.nodes rect,
+svg g g.nodes polygon {
+    fill: var(--darkreader-neutral-background) !important;
+}
+svg g rect.task {
+    fill: var(--darkreader-selection-background) !important;
+}
+svg line.messageLine0,
+svg line.messageLine1 {
+    stroke: var(--darkreader-neutral-text) !important;
+}
+div.mermaid .actor {
+    fill: var(--darkreader-neutral-background) !important;
+}
+mitid-authenticators-code-app > .code-app-container {
+    background-color: white !important;
+    padding-top: 1rem;
+}
+iframe#unpaywall[src$="unpaywall.html"] {
+    color-scheme: light !important;
+}
+select {
+    --darkreader-bg--form-control-background-color: rgba(22, 22, 22, 0) !important;
+}
+select * {
+    background-color: var(--darkreader-neutral-background) !important;
+}
+body#tumblr {
+    --darkreader-bg--secondary-accent: 31, 32, 34 !important;
+    --darkreader-bg--white: 23, 23, 23 !important;
+    --darkreader-text--black: 228, 224, 218 !important;
+}
+:host {
+    --d2l-border-color: var(--darkreader-bg--d2l-color-gypsum) !important;
+    --d2l-button-icon-background-color-hover: var(--darkreader-bg--d2l-color-gypsum) !important;
+    --d2l-color-ferrite: var(--darkreader-neutral-text) !important;
+    --d2l-color-sylvite: var(--darkreader-bg--d2l-color-sylvite) !important;
+    --d2l-dropdown-background-color: var(--darkreader-neutral-background) !important;
+    --d2l-dropdown-border-color: var(--darkreader-border--d2l-color-mica) !important;
+    --d2l-input-backgroud-color: var(--darkreader-neutral-background) !important;
+    --d2l-menu-border-color: var(--darkreader-bg--d2l-color-gypsum) !important;
+    --d2l-tooltip-background-color: var(--darkreader-neutral-background) !important;
+    --d2l-tooltip-border-color: var(--darkreader-bg--d2l-color-gypsum) !important;
+}
+:host([_floating]) .d2l-floating-buttons-container {
+    background-color: var(--darkreader-neutral-background) !important;
+    border-top-color: var(--darkreader-border--d2l-color-mica) !important;
+    opacity: 0.88 !important;
+}
+d2l-card {
+    background: var(--darkreader-neutral-background) !important;
+    border-color: var(--darkreader-border--d2l-color-gypsum) !important;
+}
+d2l-dropdown-content > div,
+d2l-menu-item {
+    background-color: var(--darkreader-neutral-background) !important;
+    border-radius: 10px !important;
+}
+d2l-empty-state-simple {
+    border-color: var(--darkreader-bg--d2l-color-gypsum) !important;
+}
+.d2l-button-filter > ul > li > a.vui-button {
+    border-color: var(--darkreader-border--d2l-color-mica) !important;
+}
+.d2l-label-text:has(.d2l-button-subtle-content):hover,
+.d2l-label-text:has(.d2l-button-subtle-content):focus,
+.d2l-label-text:has(.d2l-button-subtle-content):active {
+    background-color: var(--darkreader-bg--d2l-color-gypsum) !important;
+}
+.d2l-navigation-centerer {
+    color: inherit !important;
+}
+.d2l-tabs-layout {
+    border-color: var(--darkreader-border--d2l-color-gypsum) !important;
+}
+.d2l-input,
+.d2l-calendar-date,
+.d2l-htmleditor-container {
+    background-color: var(--darkreader-neutral-background) !important;
+}
+.d2l-collapsible-panel {
+    border: 1px solid var(--darkreader-border--d2l-color-mica) !important;
+    border-radius: 0.4rem !important;
+}
+.d2l-collapsible-panel-divider {
+    border-bottom: 1px solid var(--darkreader-border--d2l-color-mica) !important;
+}
+.d2l-w2d-flex {
+    border-bottom: 2px solid var(--darkreader-border--d2l-color-mica) !important;
+}
+.d2l-collapsible-panel scrolled,
+.d2l-collapsible-panel-header,
+.d2l-w2d-collection-fixed {
+    background-color: var(--darkreader-neutral-background) !important;
+}
+.d2l-loading-spinner-bg {
+    fill: var(--darkreader-bg--d2l-color-gypsum) !important;
+}
+.d2l-loading-spinner-bg-stroke {
+    stroke: var(--darkreader-border--d2l-color-mica) !important;
+}
+.d2l-loading-spinner-wrapper svg path,
+.d2l-loading-spinner-wrapper svg circle {
+    fill: var(--darkreader-neutral-background) !important;
+}
+embed[type="application/pdf"] { filter: invert(100%) contrast(90%); }</style>
+
+  
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'G-LT97C635PC', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+<script async="" src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/google-analytics_analytics.js"></script>
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+	ga('create', 'G-LT97C635PC', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script><script async="" src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/google-analytics_analytics.js"></script><meta property="og:title" content="Manually Decoding a NOAA APT Transmission"><meta property="og:description" content="I’ve been playing around with a software-defined radio dongle lately, and one of the most satisfying things they let you do is receive weather satellite transmissions. NOAA in particular still has 3 functioning, albeit now relatively outdated, satellites constantly transmitting data.
+Getting the WAV file The hands-on part is relatively basic: plug-in a V-dipole antenna into your SDR dongle, face the antenna North, use your favourite satellite tracker to work out the time a satellite will be over you, tune in to it’s frequency, and save the recording (in my case using SDR++)."><meta property="og:type" content="article"><meta property="og:url" content="https://www.charlesmercieca.com/post/2024-11-23-manually-decoding-a-noaa-apt-transmission/"><script async="" src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/google-analytics_analytics_002.js"></script><script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-LT97C635PC');
+</script></head>
+
+
+
+
+
+
+
+
+
+
+
+
+	
+	
+
+
+	
+  
+  <body>
+    <nav class="navbar navbar-default navbar-fixed-top navbar-custom">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#main-navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="https://www.charlesmercieca.com/">Charles Mercieca</a>
+    </div>
+
+    <div class="collapse navbar-collapse" id="main-navbar">
+      <ul class="nav navbar-nav navbar-right">
+        
+          
+            <li>
+              <a title="Blog" href="https://www.charlesmercieca.com/">Blog</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="Upcoming General Election Forecast" href="https://www.charlesmercieca.com/page/upcoming-general-election-forecast/">Upcoming General Election Forecast</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="2022 Elections" href="https://www.charlesmercieca.com/page/2022-election-forecast/">2022 Elections</a>
+            </li>
+          
+        
+          
+            <li>
+              <a title="About" href="https://www.charlesmercieca.com/page/about/">About</a>
+            </li>
+          
+        
+
+        
+
+        
+      </ul>
+    </div>
+
+    
+      <div class="avatar-container">
+        <div class="avatar-img-border">
+          <a title="Charles Mercieca" href="https://www.charlesmercieca.com/">
+            <img class="avatar-img" src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/avatar-icon.png" alt="Charles Mercieca">
+          </a>
+        </div>
+      </div>
+    
+
+  </div>
+</nav>
+
+
+
+
+    
+
+
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+<div class="pswp__bg"></div>
+
+<div class="pswp__scroll-wrap">
+    
+    <div class="pswp__container">
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+      <div class="pswp__item"></div>
+    </div>
+    
+    <div class="pswp__ui pswp__ui--hidden">
+    <div class="pswp__top-bar">
+      
+      <div class="pswp__counter"></div>
+      <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+      <button class="pswp__button pswp__button--share" title="Share"></button>
+      <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+      <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+      
+      
+      <div class="pswp__preloader">
+        <div class="pswp__preloader__icn">
+          <div class="pswp__preloader__cut">
+            <div class="pswp__preloader__donut"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+      <div class="pswp__share-tooltip"></div>
+    </div>
+    <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+    </button>
+    <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+    </button>
+    <div class="pswp__caption">
+      <div class="pswp__caption__center"></div>
+    </div>
+    </div>
+    </div>
+</div>
+
+
+  
+  
+  
+
+
+
+
+
+
+  
+
+  <header class="header-section ">
+    
+    <div class="intro-header no-img">
+      <div class="container">
+        <div class="row">
+          <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+            <div class="post-heading">
+              
+                <h1>Manually Decoding a NOAA APT Transmission</h1>
+              
+              
+              
+              
+                <span class="post-meta">
+  
+  
+  <i class="fas fa-calendar"></i>&nbsp;Posted on November 23, 2024
+  
+  
+    &nbsp;|&nbsp;<i class="fas fa-clock"></i>&nbsp;9&nbsp;minutes
+  
+  
+    &nbsp;|&nbsp;<i class="fas fa-book"></i>&nbsp;1727&nbsp;words
+  
+  
+    
+      &nbsp;|&nbsp;<i class="fas fa-user"></i>&nbsp;
+    
+  
+  
+</span>
+
+
+              
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'G-LT97C635PC', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+
+    
+<div class="container" role="main">
+  <div class="row">
+    <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+      <article role="main" class="blog-post">
+        
+
+
+<p>I’ve been playing around with a software-defined radio dongle lately,
+ and one of the most satisfying things they let you do is receive 
+weather satellite transmissions. NOAA in particular still has 3 
+functioning, albeit now relatively outdated, satellites constantly 
+transmitting data.</p>
+<div id="getting-the-wav-file" class="section level2">
+<h2>Getting the WAV file</h2>
+<p>The hands-on part is relatively basic: plug-in a V-dipole antenna 
+into your SDR dongle, face the antenna North, use your favourite 
+satellite tracker to work out the time a satellite will be over you, 
+tune in to it’s frequency, and save the recording (in my case using 
+SDR++).</p>
+<p>The recording itself is a wav file, and sounds <a href="https://www.sigidwiki.com/images/5/56/NOAA-19APT.mp3">something like this</a>. The AM signal is somewhere in there, and typically you’d pass the wav to a decoder and end up with an image.</p>
+</div>
+<div id="decoding-the-image" class="section level2">
+<h2>Decoding the Image</h2>
+<p>I’d been using <a href="https://noaa-apt.mbernardi.com.ar/">this fantastic decoder</a>
+ by Martin Bernardi to handle all the processing, but I got curious as 
+to what was going on under the hood. The approach here is heavily 
+inspired by both that source code and <a href="https://github.com/peterbbryan/NOAA-APT-decoder-experiments">this repo by Peter Bryan</a> that really helped me fill in the gaps.</p>
+<p>I’ll be working with a transmission from NOAA 18 I recorded throughout this.</p>
+<p>Oh, and… I’ll be using Python for this since finding a good R alternative to scipy.signal was hard.</p>
+<pre class="python"><code class="hljs"><span class="hljs-keyword">import</span> matplotlib
+<span class="hljs-keyword">import</span> matplotlib.pyplot <span class="hljs-keyword">as</span> plt
+
+<span class="hljs-keyword">import</span> numpy <span class="hljs-keyword">as</span> np
+
+<span class="hljs-keyword">import</span> scipy.ndimage
+<span class="hljs-keyword">from</span> scipy.io <span class="hljs-keyword">import</span> wavfile
+<span class="hljs-keyword">from</span> scipy.signal <span class="hljs-keyword">import</span> hilbert, resample
+
+<span class="hljs-keyword">import</span> pandas <span class="hljs-keyword">as</span> pd</code></pre>
+<p>Reading in the recorded WAV is easy enough.</p>
+<pre class="python"><code class="hljs"><span class="hljs-comment">#read in WAV file</span>
+fs, audio = scipy.io.wavfile.read(wav_path)
+
+<span class="hljs-comment">#this is in stereo, let's keep one channel.</span>
+audio = audio[:, <span class="hljs-number">0</span>]</code></pre>
+<p>Plotting out the first 3 seconds, we can see that the audio file looks something like this:</p>
+<pre class="python"><code class="hljs">plt.plot(range(len(audio[:fs*<span class="hljs-number">3</span>])), audio[:fs*<span class="hljs-number">3</span>], color = <span class="hljs-string">'blue'</span>)
+plt.title(<span class="hljs-string">'First 3 seconds of Raw Audio'</span>)
+plt.show()</code></pre>
+<p><img src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/unnamed-chunk-4-1.png" width="672"></p>
+<pre class="python"><code class="hljs"><span class="hljs-comment">#Work out resample rate</span>
+coef = <span class="hljs-number">20800</span> / fs
+
+samples = int(coef * len(audio))
+
+samples</code></pre>
+<pre><code class="hljs apache"><span class="hljs-comment">## 14413337</span></code></pre>
+<pre class="python"><code class="hljs">audio = scipy.signal.resample(audio, samples)
+
+plt.plot(range(len(audio[:<span class="hljs-number">20800</span>*<span class="hljs-number">3</span>])), audio[:<span class="hljs-number">20800</span>*<span class="hljs-number">3</span>], color = <span class="hljs-string">'blue'</span>)
+plt.title(<span class="hljs-string">'Resampled 3 seconds of Audio'</span>)
+plt.show()</code></pre>
+<p><img src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/unnamed-chunk-6-3.png" width="672"></p>
+<div id="getting-the-analytical-signal" class="section level3">
+<h3>Getting the Analytical Signal</h3>
+<p>Now that that’s smaller, we run the Hilbert transform. This is to 
+decode the audio signal into an analytical signal giving us the 
+amplitude and phase information we need for AM demodulation. scipy has a
+ nice Hilbert function out of the box</p>
+<pre class="python"><code class="hljs">hilbert_transformed = np.abs(hilbert(audio))</code></pre>
+<p>Which leaves us with:</p>
+<pre class="python"><code class="hljs">plt.plot(range(len(hilbert_transformed[:<span class="hljs-number">20800</span>*<span class="hljs-number">3</span>])), hilbert_transformed[:<span class="hljs-number">20800</span>*<span class="hljs-number">3</span>], color = <span class="hljs-string">'blue'</span>)
+plt.title(<span class="hljs-string">'Hilbert transformed first 3 seconds of Audio'</span>)
+plt.show()</code></pre>
+<p><img src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/unnamed-chunk-8-5.png" width="672"></p>
+<p>In practice, the Hilbert transformed signal is often downsampled further, I imagine for computational efficiency reasons.</p>
+<pre class="python"><code class="hljs">resampled_demodulated = resample(hilbert_transformed, len(hilbert_transformed) // <span class="hljs-number">5</span>)</code></pre>
+<p>In the AM signal that NOAA APT uses, lower amplitudes = darker pixels
+ and higher amplitudes = brighter pixels. To be able to plot the values 
+better, we need to turn these into discrete values. In 8 bit greyscale, 
+the values are typically 0 to 255.</p>
+<pre class="python"><code class="hljs">low, high = np.percentile(resampled_demodulated, (<span class="hljs-number">5</span>, <span class="hljs-number">95</span>))
+
+print(f<span class="hljs-string">'5th percentile (very black) is {low}, 95th percentile (very white) is {high}'</span>)</code></pre>
+<pre><code class="hljs apache"><span class="hljs-comment">## 5th percentile (very black) is 4363.90622515017, 95th percentile (very white) is 19304.66193802419</span></code></pre>
+<p>Which looks something like this:</p>
+<pre class="python"><code class="hljs">normalised_data = np.round((<span class="hljs-number">255</span> * (resampled_demodulated - low)) / (high - low)).clip(<span class="hljs-number">0</span>, <span class="hljs-number">255</span>).astype(np.int16)
+
+plt.plot(range(len(normalised_data[int(<span class="hljs-number">20800</span>*<span class="hljs-number">297</span>//<span class="hljs-number">5</span>):int(<span class="hljs-number">20800</span>*<span class="hljs-number">300</span>//<span class="hljs-number">5</span>)])), normalised_data[int(<span class="hljs-number">20800</span>*<span class="hljs-number">297</span>//<span class="hljs-number">5</span>):int(<span class="hljs-number">20800</span>*<span class="hljs-number">300</span>//<span class="hljs-number">5</span>)], color = <span class="hljs-string">'blue'</span>)
+plt.title(<span class="hljs-string">'8 bit normalised values'</span>)
+plt.show()</code></pre>
+<p><img src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/unnamed-chunk-11-7.png" width="672"></p>
+<p>Or I suppose we can swap the blue for the grey scale value to make it more clear what the signal is encoding.</p>
+<pre class="python"><code class="hljs">norm = plt.Normalize(vmin=<span class="hljs-number">0</span>, vmax=<span class="hljs-number">255</span>)
+cmap = plt.get_cmap(<span class="hljs-string">'binary'</span>)
+
+<span class="hljs-comment"># Create figure and axis</span>
+fig, ax = plt.subplots()
+
+<span class="hljs-comment"># Scatter plot with colormap applied based on normalized data</span>
+ax.scatter(range(len(normalised_data[int(<span class="hljs-number">20800</span>*<span class="hljs-number">297</span>//<span class="hljs-number">5</span>):int(<span class="hljs-number">20800</span>*<span class="hljs-number">300</span>//<span class="hljs-number">5</span>)])),
+           normalised_data[int(<span class="hljs-number">20800</span>*<span class="hljs-number">297</span>//<span class="hljs-number">5</span>):int(<span class="hljs-number">20800</span>*<span class="hljs-number">300</span>//<span class="hljs-number">5</span>)],
+           c=normalised_data[int(<span class="hljs-number">20800</span>*<span class="hljs-number">297</span>//<span class="hljs-number">5</span>):int(<span class="hljs-number">20800</span>*<span class="hljs-number">300</span>//<span class="hljs-number">5</span>)], cmap=cmap, norm=norm, s=<span class="hljs-number">1</span>)
+
+ax.set_title(<span class="hljs-string">'Maybe a better representation of the information in the signal'</span>)
+
+<span class="hljs-comment"># Set background color to light blueish</span>
+fig.patch.set_facecolor(<span class="hljs-string">'lightblue'</span>)  <span class="hljs-comment"># Sets figure background</span>
+ax.set_facecolor(<span class="hljs-string">'lightblue'</span>)  <span class="hljs-comment"># Sets axis background</span>
+
+<span class="hljs-comment"># Show the plot</span>
+plt.show()</code></pre>
+<p><img src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/unnamed-chunk-12-9.png" width="672"></p>
+<p>We’ve actually already come a long way: we know how NOAA 18 is 
+encoding information in a signal. But for a pretty picture, we still 
+have a bit further to go!</p>
+</div>
+<div id="synchronizing-the-frames" class="section level3">
+<h3>Synchronizing the Frames</h3>
+<p>The single continuous stream of information needs to be chopped up at
+ set intervals and stacked on top of each other to make an image. The 
+transmission itself also contains this information in the form of 
+synchronization pixels: when a new line starts transmitting, a 36 pixel 
+black-black-white-white etc. sequence is the first to get encoded. If we
+ can reliably detect this, we can stack up frames!</p>
+<pre class="python"><code class="hljs">sync_sequence = np.array([<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>,
+                                     <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>,
+                                     <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>,
+                                     <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">255</span>, <span class="hljs-number">255</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>,
+                                     <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>]) - <span class="hljs-number">128</span></code></pre>
+<p>The Peter Bryan repo provided a really neat way to this in a for 
+loop. The only slight modification I could think of was using np.array -
+ 128 for a vectorised approach, instead of subtracting element wise. 
+This is a few seconds faster.</p>
+<pre class="python"><code class="hljs">normalised_data = np.round((<span class="hljs-number">255</span> * (resampled_demodulated - low)) / (high - low)).clip(<span class="hljs-number">0</span>, <span class="hljs-number">255</span>)
+
+rows = [<span class="hljs-keyword">None</span>] 
+previous_corr = -np.inf
+previous_pointer = <span class="hljs-number">0</span>
+minimum_row_separation = <span class="hljs-number">2000</span>
+
+stats_table = []
+
+<span class="hljs-keyword">for</span> pointer <span class="hljs-keyword">in</span> range(len(normalised_data) - len(sync_sequence)):
+    <span class="hljs-comment"># First get a 36 sequence row</span>
+    row = normalised_data[pointer : pointer + len(sync_sequence)] - <span class="hljs-number">128</span>
+    
+    <span class="hljs-comment"># Calculate correlation</span>
+    current_corr = np.dot(sync_sequence, row)
+    
+    <span class="hljs-comment">#save these for later</span>
+    stats = {<span class="hljs-string">'pointer_location'</span>: pointer,
+             <span class="hljs-string">'correlation'</span>: current_corr}
+    stats_table.append(stats)
+    
+    <span class="hljs-comment"># Check separation and correlation conditions</span>
+    <span class="hljs-keyword">if</span> pointer - previous_pointer &gt; minimum_row_separation:
+        previous_corr, previous_pointer = -np.inf, pointer
+        rows.append(normalised_data[pointer : pointer + <span class="hljs-number">2080</span>])
+        
+    <span class="hljs-keyword">elif</span> current_corr &gt; previous_corr:
+        previous_corr, previous_pointer = current_corr, pointer
+        rows[-<span class="hljs-number">1</span>] = normalised_data[pointer : pointer + <span class="hljs-number">2080</span>]</code></pre>
+</div>
+<div id="but-wait-whats-with-that-correlation-measure" class="section level3">
+<h3>But wait, what’s with that correlation measure</h3>
+<p>Seeing correlation numbers coming out of np.dot is a bit new for me, 
+but it’s a really smart way to quickly test for the general signal 
+you’re expecting. Say you’re looking for the signal (1, -1, 1, -1). If 
+you have the following candidates:</p>
+<pre class="python"><code class="hljs">target = np.array([<span class="hljs-number">1</span>, -<span class="hljs-number">1</span>, <span class="hljs-number">1</span>, -<span class="hljs-number">1</span>])
+
+candidates = {
+    <span class="hljs-string">'poor_match'</span>: np.array([<span class="hljs-number">1</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>, -<span class="hljs-number">1</span>]),
+    <span class="hljs-string">'no_signal'</span>: np.array([<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>]),
+    <span class="hljs-string">'inverse'</span>: np.array([-<span class="hljs-number">1</span>, <span class="hljs-number">1</span>, -<span class="hljs-number">1</span>, <span class="hljs-number">1</span>]),
+    <span class="hljs-string">'good_match'</span>: np.array([<span class="hljs-number">0.8</span>, -<span class="hljs-number">0.7</span>, <span class="hljs-number">0.7</span>, -<span class="hljs-number">0.8</span>]),
+    <span class="hljs-string">'target'</span>: np.array([<span class="hljs-number">1</span>, -<span class="hljs-number">1</span>, <span class="hljs-number">1</span>, -<span class="hljs-number">1</span>])
+}
+
+<span class="hljs-keyword">for</span> candidate <span class="hljs-keyword">in</span> candidates:
+    print(f<span class="hljs-string">'Result for {candidate} is: {np.dot(target, candidates[candidate])}'</span>)</code></pre>
+<pre><code class="hljs apache"><span class="hljs-comment">## Result for poor_match is: 1</span>
+<span class="hljs-comment">## Result for no_signal is: 0</span>
+<span class="hljs-comment">## Result for inverse is: -4</span>
+<span class="hljs-comment">## Result for good_match is: 3.0</span>
+<span class="hljs-comment">## Result for target is: 4</span></code></pre>
+<p>As you can see, this approach yields high positive values when the 
+signal is close to what we want, and 0 or negative values when it is 
+not. This is quite clever, especially when you consider that most 
+computers have been optimised to calculate dot products very quickly.</p>
+<p>And here’s how the correlation values vary across (a random slice of) the frame:</p>
+<pre class="python"><code class="hljs">correlation_stats = pd.DataFrame(stats_table)
+
+<span class="hljs-comment">#grab random slice for better viz</span>
+correlation_example = correlation_stats.query(<span class="hljs-string">'pointer_location &gt;=270000&amp; pointer_location &lt;=290000'</span>)
+
+plt.scatter(correlation_example[<span class="hljs-string">'pointer_location'</span>], correlation_example[<span class="hljs-string">'correlation'</span>], color=<span class="hljs-string">'blue'</span>, marker=<span class="hljs-string">'o'</span>)
+
+plt.xlabel(<span class="hljs-string">'index location'</span>)
+plt.ylabel(<span class="hljs-string">'correlation measure'</span>)
+plt.grid()
+plt.xlim(<span class="hljs-number">270000</span>, <span class="hljs-number">290000</span>)</code></pre>
+<pre><code class="hljs apache"><span class="hljs-comment">## (270000.0, 290000.0)</span></code></pre>
+<pre class="python"><code class="hljs">plt.show()</code></pre>
+<p><img src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/unnamed-chunk-16-11.png" width="672"></p>
+<p>You can see they peak roughly every 2080 rows, which makes sense! 
+Interestingly, the best correlation is not always 2080. I imagine the 
+main reason is noise.</p>
+<pre class="python"><code class="hljs"><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">is_peak</span><span class="hljs-params">(window)</span>:</span>
+    center = len(window) // <span class="hljs-number">2</span>
+    <span class="hljs-keyword">return</span> window[center] == max(window) <span class="hljs-keyword">and</span> center &gt; <span class="hljs-number">0</span> <span class="hljs-keyword">and</span> center &lt; len(window) - <span class="hljs-number">1</span>
+
+<span class="hljs-comment"># Apply a rolling window to identify peaks</span>
+window_size = <span class="hljs-number">2001</span>
+correlation_stats[<span class="hljs-string">'is_peak'</span>] = correlation_stats[<span class="hljs-string">'correlation'</span>].rolling(window=window_size, center=<span class="hljs-keyword">True</span>).apply(<span class="hljs-keyword">lambda</span> x: is_peak(x), raw=<span class="hljs-keyword">True</span>).astype(bool)
+
+<span class="hljs-comment"># Mark peaks in the DataFrame</span>
+correlation_stats[<span class="hljs-string">'peak_marker'</span>] = np.where(correlation_stats[<span class="hljs-string">'is_peak'</span>], <span class="hljs-string">'Peak'</span>, <span class="hljs-string">''</span>)
+
+cp = correlation_stats.query(<span class="hljs-string">'is_peak'</span>)
+cp[<span class="hljs-string">'lag'</span>] = cp[<span class="hljs-string">'pointer_location'</span>].shift()</code></pre>
+<pre><code class="hljs apache"><span class="hljs-comment">## &lt;string&gt;:1: SettingWithCopyWarning: </span>
+<span class="hljs-comment">## A value is trying to be set on a copy of a slice from a DataFrame.</span>
+<span class="hljs-comment">## Try using .loc[row_indexer,col_indexer] = value instead</span>
+<span class="hljs-comment">## </span>
+<span class="hljs-comment">## See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy</span></code></pre>
+<pre class="python"><code class="hljs">cp[<span class="hljs-string">'window'</span>] = cp[<span class="hljs-string">'pointer_location'</span>] - cp[<span class="hljs-string">'lag'</span>]</code></pre>
+<pre><code class="hljs apache"><span class="hljs-comment">## &lt;string&gt;:1: SettingWithCopyWarning: </span>
+<span class="hljs-comment">## A value is trying to be set on a copy of a slice from a DataFrame.</span>
+<span class="hljs-comment">## Try using .loc[row_indexer,col_indexer] = value instead</span>
+<span class="hljs-comment">## </span>
+<span class="hljs-comment">## See the caveats in the documentation: https://pandas.pydata.org/pandas-docs/stable/user_guide/indexing.html#returning-a-view-versus-a-copy</span></code></pre>
+<pre class="python"><code class="hljs">cp = cp.query(<span class="hljs-string">'window &gt; 2076'</span>).query(<span class="hljs-string">'window &lt;2083'</span>).reset_index()</code></pre>
+<pre class="python"><code class="hljs">plt.scatter(cp.index, cp[<span class="hljs-string">'window'</span>], color=<span class="hljs-string">'blue'</span>, marker=<span class="hljs-string">'o'</span>, label=<span class="hljs-string">'Shift Values'</span>)
+plt.xlabel(<span class="hljs-string">'Index'</span>)
+plt.ylabel(<span class="hljs-string">'Shift'</span>)
+plt.title(<span class="hljs-string">'Index vs Shift'</span>)
+plt.show()</code></pre>
+<p><img src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/unnamed-chunk-18-13.png" width="672"></p>
+<p>But I was partly hoping the variation was due to the doppler shift 
+(rows arrive slightly faster in the first half of the acquisition as the
+ satellite is flying towards me, and slower in the second half while 
+flying away), but I also imagined this variation to be more pronounced, 
+so I’m not quite sure.</p>
+<p>And with that, we’re actually… there.</p>
+<pre class="python"><code class="hljs">image = np.row_stack([row <span class="hljs-keyword">for</span> row <span class="hljs-keyword">in</span> rows <span class="hljs-keyword">if</span> len(row) == <span class="hljs-number">2080</span>]).astype(np.uint8)
+
+<span class="hljs-keyword">from</span> PIL <span class="hljs-keyword">import</span> Image
+
+Image.fromarray(image)</code></pre>
+<pre><code class="hljs xml">## <span class="hljs-tag">&lt;<span class="hljs-title">PIL.Image.Image</span> <span class="hljs-attribute">image</span> <span class="hljs-attribute">mode</span>=<span class="hljs-value">L</span> <span class="hljs-attribute">size</span>=<span class="hljs-value">2080x1345</span> <span class="hljs-attribute">at</span> <span class="hljs-attribute">0x24E04F03D90</span>&gt;</span></code></pre>
+<p><img src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/greyscale_output.png"></p>
+</div>
+<div id="adding-colour" class="section level3">
+<h3>Adding Colour</h3>
+<p>But let’s go on a side quest. I want to add colour. Let’s focus on 
+adding it to the left side of the image, or Image A in NOAA APT 
+parlance. (The right side, Image B, is the infra red view. Image A is 
+the visible light.)</p>
+<p><em>(Quick aside, also visible are the sync sequences we used, 
+they’re the thin vertical black white lines at the very left. By 
+contrast, the horizontal lines across the bottom are a premature loss of
+ signal as NOAA 18 dipped behind a building to my South while I was 
+recording.)</em></p>
+<p>Selecting it is as straightforward as cropping the matrix:</p>
+<pre class="python"><code class="hljs">image_a = image[:, <span class="hljs-number">86</span>:<span class="hljs-number">990</span>]
+Image.fromarray(image_a)</code></pre>
+<pre><code class="hljs xml">## <span class="hljs-tag">&lt;<span class="hljs-title">PIL.Image.Image</span> <span class="hljs-attribute">image</span> <span class="hljs-attribute">mode</span>=<span class="hljs-value">L</span> <span class="hljs-attribute">size</span>=<span class="hljs-value">904x1345</span> <span class="hljs-attribute">at</span> <span class="hljs-attribute">0x24E0917E9D0</span>&gt;</span></code></pre>
+<p><img src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/image_a.png"></p>
+<p>I downloaded <a href="https://github.com/martinber/noaa-apt/blob/master/res/palettes/noaa-apt-daylight.png">a palette</a> I really like from the NOAA APT GUI I was using.</p>
+<pre class="python"><code class="hljs">palette_img = Image.open(palette_path)
+palette = np.array(palette_img)
+indices = np.arange(<span class="hljs-number">256</span>)
+palette_colors = palette[indices, indices]</code></pre>
+<p>The palette is a glorified lookup table which we’ll use to look up the 0 to 255 values of grey scale. For example, at value 0</p>
+<pre class="python"><code class="hljs">palette_colors[<span class="hljs-number">0</span>,:<span class="hljs-number">3</span>]</code></pre>
+<pre><code class="hljs apache"><span class="hljs-comment">## array([4, 3, 0], dtype=uint8)</span></code></pre>
+<p>it is RGB value 4,3,0 or black. At value 255, it is:</p>
+<pre class="python"><code class="hljs">palette_colors[<span class="hljs-number">255</span>,:<span class="hljs-number">3</span>]</code></pre>
+<pre><code class="hljs apache"><span class="hljs-comment">## array([255, 255, 255], dtype=uint8)</span></code></pre>
+<p>or completely black, with intermediate colours in between. 
+‘Colourising’ the image involves applying the same principle to each 
+pixel:</p>
+<pre class="python"><code class="hljs">grayscale_array = image_a
+height, width = grayscale_array.shape
+colored = np.zeros((height, width, <span class="hljs-number">3</span>), dtype=np.uint8)
+
+flat_gray = grayscale_array.flatten()
+colored_flat = palette_colors[flat_gray, :<span class="hljs-number">3</span>]
+
+colored = colored_flat.reshape(height, width, <span class="hljs-number">3</span>)
+Image.fromarray(colored)</code></pre>
+<pre><code class="hljs xml">## <span class="hljs-tag">&lt;<span class="hljs-title">PIL.Image.Image</span> <span class="hljs-attribute">image</span> <span class="hljs-attribute">mode</span>=<span class="hljs-value">RGB</span> <span class="hljs-attribute">size</span>=<span class="hljs-value">904x1345</span> <span class="hljs-attribute">at</span> <span class="hljs-attribute">0x24E091554F0</span>&gt;</span></code></pre>
+<p><img src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/col_output.png"></p>
+<p>NOAA 19 launched in 2009, was the last major Western weather 
+satellite to have some form of analog data transmission, as APT gave way
+ to a digitised alternative, HRPT. Compared to APT, HRPT has many 
+advantages, including higher resolution, more channels and faster 
+transmission (a full APT transmission is about 20 minutes). It is 
+however a bit more finicky in terms of interference from GSM towers or 
+obstructions.</p>
+<p>Some of the inherent romanticism of APT, besides being relatively 
+easy to understand, is the fact that anyone with the most basic antenna 
+can probably get a decent image from most of the earth’s surface.</p>
+</div>
+</div>
+
+
+        
+
+        
+            <hr>
+            <section id="social-share">
+              <div class="list-inline footer-links">
+                
+
+<div class="share-box" aria-hidden="true">
+    <ul class="share">
+      
+      <li>
+        <a href="https://twitter.com/share?url=https%3a%2f%2fwww.charlesmercieca.com%2fpost%2f2024-11-23-manually-decoding-a-noaa-apt-transmission%2f&amp;text=Manually%20Decoding%20a%20NOAA%20APT%20Transmission&amp;via=Charles_Merc" target="_blank" title="Share on Twitter">
+          <i class="fab fa-twitter"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="https://www.facebook.com/sharer/sharer.php?u=https%3a%2f%2fwww.charlesmercieca.com%2fpost%2f2024-11-23-manually-decoding-a-noaa-apt-transmission%2f" target="_blank" title="Share on Facebook">
+          <i class="fab fa-facebook"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="https://reddit.com/submit?url=https%3a%2f%2fwww.charlesmercieca.com%2fpost%2f2024-11-23-manually-decoding-a-noaa-apt-transmission%2f&amp;title=Manually%20Decoding%20a%20NOAA%20APT%20Transmission" target="_blank" title="Share on Reddit">
+          <i class="fab fa-reddit"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="https://www.linkedin.com/shareArticle?url=https%3a%2f%2fwww.charlesmercieca.com%2fpost%2f2024-11-23-manually-decoding-a-noaa-apt-transmission%2f&amp;title=Manually%20Decoding%20a%20NOAA%20APT%20Transmission" target="_blank" title="Share on LinkedIn">
+          <i class="fab fa-linkedin"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="https://www.stumbleupon.com/submit?url=https%3a%2f%2fwww.charlesmercieca.com%2fpost%2f2024-11-23-manually-decoding-a-noaa-apt-transmission%2f&amp;title=Manually%20Decoding%20a%20NOAA%20APT%20Transmission" target="_blank" title="Share on StumbleUpon">
+          <i class="fab fa-stumbleupon"></i>
+        </a>
+      </li>
+  
+      
+      <li>
+        <a href="https://www.pinterest.com/pin/create/button/?url=https%3a%2f%2fwww.charlesmercieca.com%2fpost%2f2024-11-23-manually-decoding-a-noaa-apt-transmission%2f&amp;description=Manually%20Decoding%20a%20NOAA%20APT%20Transmission" target="_blank" title="Share on Pinterest">
+          <i class="fab fa-pinterest"></i>
+        </a>
+      </li>
+    </ul>
+  </div>
+  
+
+              </div>
+            </section>
+        
+
+        
+          
+
+          
+        
+      </article>
+
+      
+        <ul class="pager blog-pager">
+          
+            <li class="previous">
+              <a href="https://www.charlesmercieca.com/post/2024-09-03-bayesian-search-theory-in-the-hunt-for-the-uss-central-america/" data-toggle="tooltip" data-placement="top" title="Bayesian Search Theory in the Hunt for the USS Central America">← Previous Post</a>
+            </li>
+          
+          
+            <li class="next">
+              <a href="https://www.charlesmercieca.com/post/2025-01-18-recreating-the-eaton-fire-map-sentinel-1-coherence/" data-toggle="tooltip" data-placement="top" title="Recreating the Eaton Fire map – Sentinel 1 Coherence">Next Post →</a>
+            </li>
+          
+        </ul>
+      
+
+
+      
+        
+        
+      
+
+    </div>
+  </div>
+</div>
+
+      
+<footer>
+  <div class="container">
+    <div class="row">
+      <div class="col-lg-8 col-lg-offset-2 col-md-10 col-md-offset-1">
+        <ul class="list-inline text-center footer-links">
+          
+              <li>
+                <a href="mailto:c.g.mercieca@gmail.com" title="Email me">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fas fa-envelope fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://github.com/CharlesMercieca" title="GitHub">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-github fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://twitter.com/Charles_Merc" title="Twitter">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-twitter fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+              <li>
+                <a href="https://linkedin.com/in/charles-mercieca-a24647196" title="LinkedIn">
+                  <span class="fa-stack fa-lg">
+                    <i class="fas fa-circle fa-stack-2x"></i>
+                    <i class="fab fa-linkedin fa-stack-1x fa-inverse"></i>
+                  </span>
+                </a>
+              </li>
+          
+        </ul>
+        <p class="credits copyright text-muted">
+          
+
+          &nbsp;•&nbsp;©
+          
+            2026
+          
+
+          
+            &nbsp;•&nbsp;
+            <a href="https://www.charlesmercieca.com/">Charles Mercieca</a>
+          
+        </p>
+        
+        <p class="credits theme-by text-muted">
+          <a href="https://gohugo.io/">Hugo v0.81.0</a> powered &nbsp;•&nbsp; Theme <a href="https://github.com/halogenica/beautifulhugo">Beautiful Hugo</a> adapted from <a href="https://deanattali.com/beautiful-jekyll/">Beautiful Jekyll</a>
+          
+        </p>
+      </div>
+    </div>
+  </div>
+</footer><script src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/katex.min.js" integrity="sha384-K3vbOmF2BtaVai+Qk37uypf7VrgBubhQreNQe9aGsz9lB63dIFiQVlJbr92dw2Lx" crossorigin="anonymous"></script>
+<script src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/auto-render.min.js" integrity="sha384-kmZOZB5ObwgQnS/DuDg6TScgOiWWBiVt0plIRkZCmE6rDZGrEOQeHM5PcHi+nyqe" crossorigin="anonymous"></script>
+<script src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>
+<script src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+<script src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/main.js"></script>
+<script src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/highlight.min.js"></script>
+<script> hljs.initHighlightingOnLoad(); </script>
+<script> $(document).ready(function() {$("pre.chroma").css("padding","0");}); </script><script> renderMathInElement(document.body); </script><script src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/photoswipe.min.js" integrity="sha384-QELNnmcmU8IR9ZAykt67vGr9/rZJdHbiWi64V88fCPaOohUlHCqUD/unNN0BXSqy" crossorigin="anonymous"></script>
+<script src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/photoswipe-ui-default.min.js" integrity="sha384-m67o7SkQ1ALzKZIFh4CiTA8tmadaujiTa9Vu+nqPSwDOqHrDmxLezTdFln8077+q" crossorigin="anonymous"></script><script src="Manually%20Decoding%20a%20NOAA%20APT%20Transmission%20-%20Charles%20Mercieca_files/load-photoswipe.js"></script>
+
+
+
+
+
+
+
+
+
+<script type="application/javascript">
+var doNotTrack = false;
+if (!doNotTrack) {
+	(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+	(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+	m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+	})(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+	ga('create', 'G-LT97C635PC', 'auto');
+	
+	ga('send', 'pageview');
+}
+</script>
+
+
+    
+  
+
+
+</body></html>
