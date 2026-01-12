@@ -136,7 +136,7 @@ celerybeat.pid
 
 # Environments
 .env
-.envrc
+# .envrc - used by direnv for Nix flakes, should be committed
 .venv
 env/
 venv/
@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# Nix / direnv
+.direnv/
+result
+result-*
