@@ -11,6 +11,11 @@
     <script src="https://unpkg.com/wavesurfer.js@6.6.3/dist/wavesurfer.min.js" defer></script>
     <script src="https://unpkg.com/wavesurfer.js@6.6.3/dist/plugin/wavesurfer.spectrogram.min.js" defer></script>
 
+    <!-- Live Python editor (CodeMirror) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js" defer></script>
+
     <script src="web_interface.js" defer></script>
     <style>
         body {
@@ -137,6 +142,21 @@
         @media (max-width: 900px) {
             .viz-row { grid-template-columns: 1fr; }
         }
+
+        .editor-toolbar {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin: 8px 0;
+        }
+
+        .CodeMirror {
+            border: 1px solid #ddd;
+            height: 360px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 12px;
+        }
     </style>
 </head>
 <body>
@@ -183,13 +203,24 @@
     <div class="section">
         <h2>2. Preprocess Signal</h2>
         <button id="preprocess-btn" disabled>Run Preprocessor</button>
-        <p>Converts WAV audio to normalized signal data (slow, ~10-30s)</p>
+        <p>Loads precomputed normalized signal data (simulated ~1s)</p>
     </div>
 
     <div class="section">
         <h2>3. Decode Image</h2>
         <button id="decode-btn" disabled>Run Decoder</button>
         <p>Extracts satellite image from preprocessed data (fast, <1s)</p>
+    </div>
+
+    <div class="section">
+        <h2>Decoder Python (Live)</h2>
+        <p>Edit the decoder code and rerun decoding. By default this is loaded from <code>student_decoder.py</code> (which calls into the advanced decoder).</p>
+        <div class="editor-toolbar">
+            <button id="apply-decoder-btn" disabled>Apply Python Code</button>
+            <button id="reset-decoder-btn" disabled>Reset to Default</button>
+            <span id="decoder-status" style="color:#666;"></span>
+        </div>
+        <textarea id="decoder-code" spellcheck="false"></textarea>
     </div>
 
     <div class="section">

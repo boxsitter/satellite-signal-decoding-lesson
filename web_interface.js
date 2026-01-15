@@ -5,6 +5,7 @@
 
 let currentSignalData = null;
 let normalizedSignal = null;
+let currentSignalPath = null;
 let pythonReady = false;
 let pyInterpreter = null;
 let pyWorker = null;
@@ -28,10 +29,12 @@ let workerReady = false;
 let workerInitFailed = false;
 let workerReqId = 0;
 const workerPending = new Map();
+// Bump this to force browsers/SW to fetch a fresh worker script.
+const WORKER_VERSION = '2026-01-14b';
 
 function ensureComputeWorker() {
     if (computeWorker || workerInitFailed) return;
-    computeWorker = new Worker('./pyodide_worker.js');
+    computeWorker = new Worker(`./pyodide_worker.js?v=${encodeURIComponent(WORKER_VERSION)}`);
     computeWorker.onmessage = (ev) => {
         const msg = ev.data || {};
         if (msg.type === 'init_step') {
@@ -42,7 +45,8 @@ function ensureComputeWorker() {
         }
         if (msg.type === 'ready') {
             workerReady = true;
-            updateStatus('Python worker ready.');
+            const suffix = msg.version ? ` (worker ${msg.version})` : '';
+            updateStatus(`Python worker ready.${suffix}`);
             return;
         }
         if (msg.type === 'py_stdout') {
@@ -72,7 +76,7 @@ function ensureComputeWorker() {
             }
             return;
         }
-        if (msg.type === 'preprocess_done' || msg.type === 'decode_done' || msg.type === 'reload_done') {
+        if (msg.type === 'preprocess_done' || msg.type === 'prebaked_load_done' || msg.type === 'decode_done' || msg.type === 'reload_done' || msg.type === 'set_decoder_done') {
             const pending = workerPending.get(msg.id);
             if (pending) {
                 workerPending.delete(msg.id);
@@ -97,6 +101,12 @@ let progressContainer, progressBar, progressDetails;
 let audioInitialized = false;
 let volumeSlider, volumeValue, lessAnnoyingCheckbox;
 
+// Live decoder editor
+let decoderTextarea, applyDecoderBtn, resetDecoderBtn, decoderStatus;
+let decoderEditor = null;
+let defaultDecoderSource = null;
+let lastAppliedDecoderSource = null;
+
 let uiVolume = 0.5;
 let uiLessAnnoying = true;
 let lowpassFilterNode = null;
@@ -113,6 +123,11 @@ function initializeElements() {
     progressBar = document.getElementById('progress-bar');
     progressDetails = document.getElementById('progress-details');
 
+    decoderTextarea = document.getElementById('decoder-code');
+    applyDecoderBtn = document.getElementById('apply-decoder-btn');
+    resetDecoderBtn = document.getElementById('reset-decoder-btn');
+    decoderStatus = document.getElementById('decoder-status');
+
     audioEl = document.getElementById('audio-player');
     audioToggleBtn = document.getElementById('audio-toggle-btn');
     audioScrub = document.getElementById('audio-scrub');
@@ -123,6 +138,102 @@ function initializeElements() {
     volumeSlider = document.getElementById('volume-slider');
     volumeValue = document.getElementById('volume-value');
     lessAnnoyingCheckbox = document.getElementById('less-annoying');
+}
+
+function setDecoderStatus(text) {
+    if (decoderStatus) decoderStatus.textContent = text || '';
+}
+
+function initDecoderEditor() {
+    if (!decoderTextarea) return;
+    if (decoderEditor) return;
+
+    if (!window.CodeMirror) {
+        // Fallback: plain textarea.
+        decoderTextarea.style.width = '100%';
+        decoderTextarea.style.minHeight = '360px';
+        return;
+    }
+
+    decoderEditor = window.CodeMirror.fromTextArea(decoderTextarea, {
+        mode: 'python',
+        lineNumbers: true,
+        indentUnit: 4,
+        tabSize: 4,
+        viewportMargin: Infinity,
+    });
+}
+
+function getDecoderSource() {
+    if (decoderEditor) return decoderEditor.getValue();
+    if (decoderTextarea) return decoderTextarea.value;
+    return '';
+}
+
+function setDecoderSource(source) {
+    const s = String(source ?? '');
+    if (decoderEditor) {
+        decoderEditor.setValue(s);
+        return;
+    }
+    if (decoderTextarea) decoderTextarea.value = s;
+}
+
+async function loadDefaultDecoderSource() {
+    if (!decoderTextarea) return;
+    initDecoderEditor();
+
+    try {
+        setDecoderStatus('Loading default decoder…');
+        if (applyDecoderBtn) applyDecoderBtn.disabled = true;
+        if (resetDecoderBtn) resetDecoderBtn.disabled = true;
+
+        const resp = await fetch(`/student_decoder.py?v=${encodeURIComponent(WORKER_VERSION)}`, { cache: 'no-store' });
+        if (!resp.ok) throw new Error(`Failed to load /student_decoder.py (HTTP ${resp.status})`);
+        const text = await resp.text();
+
+        defaultDecoderSource = text;
+        setDecoderSource(text);
+        lastAppliedDecoderSource = null;
+
+        if (applyDecoderBtn) applyDecoderBtn.disabled = false;
+        if (resetDecoderBtn) resetDecoderBtn.disabled = false;
+        setDecoderStatus('Loaded.');
+    } catch (e) {
+        console.error(e);
+        setDecoderStatus(`Failed: ${e?.message || String(e)}`);
+    }
+}
+
+async function applyDecoderSourceToWorker(source) {
+    ensureComputeWorker();
+    if (workerInitFailed) throw new Error('Python worker failed to initialize. Refresh and try again.');
+
+    const src = String(source ?? '');
+    if (src === lastAppliedDecoderSource) return;
+
+    setDecoderStatus('Applying code…');
+    await workerCall({ type: 'set_decoder_source', source: src });
+    lastAppliedDecoderSource = src;
+    setDecoderStatus('Applied.');
+}
+
+async function onApplyDecoderClicked() {
+    try {
+        await applyDecoderSourceToWorker(getDecoderSource());
+        updateStatus('Decoder code applied. Ready to decode.');
+    } catch (e) {
+        console.error(e);
+        updateStatus(`Error applying decoder code:\n${e?.message || String(e)}`);
+        setDecoderStatus('Apply failed.');
+    }
+}
+
+function onResetDecoderClicked() {
+    if (defaultDecoderSource == null) return;
+    setDecoderSource(defaultDecoderSource);
+    lastAppliedDecoderSource = null;
+    setDecoderStatus('Reset.');
 }
 
 function setVolumeUI(vol01) {
@@ -288,6 +399,17 @@ function hideProgress() {
     }
 }
 
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function prebakedNpyPathForWav(wavPath) {
+    // Example: signals/signal1.wav -> signals/preprocessed/signal1.normalized.npy
+    const file = String(wavPath || '').split('/').pop() || '';
+    const base = file.replace(/\.wav$/i, '');
+    return `signals/preprocessed/${base}.normalized.npy`;
+}
+
 // Convert PIL Image to base64 and display
 function showImage(imageData) {
     outputImage.src = `data:image/png;base64,${imageData}`;
@@ -297,7 +419,7 @@ function showImage(imageData) {
 // Populate signal file list
 async function populateSignalList() {
     try {
-        const signals = ['signal1.wav', 'signal2.wav', 'signal3.wav'];
+        const signals = ['noise_48000hz.wav', 'signal1.wav', 'signal2.wav', 'signal3.wav'];
         
         signals.forEach(sig => {
             const option = document.createElement('option');
@@ -323,6 +445,15 @@ async function loadSignal() {
     try {
         loadBtn.disabled = true;
         updateStatus(`Loading ${selected}...`);
+
+        // Reset UI state for a fresh run.
+        hideProgress();
+        if (outputImage) {
+            outputImage.classList.add('hidden');
+            outputImage.removeAttribute('src');
+        }
+        preprocessBtn.disabled = true;
+        decodeBtn.disabled = true;
         
         const response = await fetch(selected);
         if (!response.ok) {
@@ -330,6 +461,8 @@ async function loadSignal() {
         }
         
         currentSignalData = await response.arrayBuffer();
+        currentSignalPath = selected;
+        normalizedSignal = null;
 
         // Audio setup: WaveSurfer waveform + full-file spectrogram
         if (audioObjectUrl) {
@@ -369,11 +502,13 @@ async function loadSignal() {
 
 // Run signal preprocessor (Python)
 async function runPreprocessor() {
-    if (!currentSignalData) {
+    if (!currentSignalPath) {
         updateStatus('No signal loaded');
         return;
     }
-    
+
+    // Preprocessing is done offline now (SciPy). In the browser, we simulate a short
+    // "processing" delay and load the pre-baked normalized signal from a `.npy` file.
     ensureComputeWorker();
     if (workerInitFailed) {
         updateStatus('Python worker failed to initialize. Refresh and try again.');
@@ -387,19 +522,40 @@ async function runPreprocessor() {
         preprocessInFlight = true;
         preprocessBtn.disabled = true;
         decodeBtn.disabled = true;
-        updateStatus('Preprocessing signal... (this may take 10-30 seconds)');
+        updateStatus('Preprocessing signal...');
+        updateProgress(10, 'Initializing…');
 
-        // Transfer the ArrayBuffer to worker to avoid copying 18MB.
-        const wavBytes = currentSignalData;
-        const resp = await workerCall({ type: 'preprocess', wavBytes }, [wavBytes]);
+        // Fake a short delay so the lesson flow still makes sense.
+        await sleep(450);
+        updateProgress(55, 'Loading pre-baked data…');
+
+        const npyPath = prebakedNpyPathForWav(currentSignalPath);
+        const response = await fetch(npyPath, { cache: 'no-store' });
+        if (!response.ok) {
+            throw new Error(`Missing preprocessed file: ${npyPath} (HTTP ${response.status}). Run the offline preprocessor step.`);
+        }
+
+        const npyBytes = await response.arrayBuffer();
+        updateProgress(85, 'Preparing data for decoder…');
+
+        const timeoutMs = 30000;
+        const resp = await Promise.race([
+            workerCall({ type: 'load_prebaked_npy', npyBytes }, [npyBytes]),
+            new Promise((_, reject) => setTimeout(() => reject(new Error(
+                `Pre-baked load timed out after ${Math.round(timeoutMs / 1000)}s. Hard-refresh the page (Ctrl+Shift+R). If it persists, unregister the COOP/COEP service worker and reload.`
+            )), timeoutMs)),
+        ]);
         normalizedSignal = resp.normalized;
-        // After transfer, currentSignalData is detached; keep normalized only.
-        currentSignalData = null;
+
+        updateProgress(100, 'Ready to decode');
+        await sleep(150);
+        hideProgress();
         
         updateStatus(`Preprocessing complete! Ready to decode.`);
         decodeBtn.disabled = false;
         
     } catch (error) {
+        hideProgress();
         updateStatus(`Error during preprocessing:\n${error.message}`);
         console.error(error);
     } finally {
@@ -428,6 +584,11 @@ async function runDecoder() {
         decodeBtn.disabled = true;
         updateStatus('Decoding image...');
 
+        // Run decoding against the current editor contents.
+        if (decoderTextarea) {
+            await applyDecoderSourceToWorker(getDecoderSource());
+        }
+
         const timeoutMs = 180000;
         const resp = await Promise.race([
             workerCall({ type: 'decode', normalized: normalizedSignal }),
@@ -455,6 +616,13 @@ function setupEventHandlers() {
     loadBtn.addEventListener('click', loadSignal);
     preprocessBtn.addEventListener('click', runPreprocessor);
     decodeBtn.addEventListener('click', runDecoder);
+
+    if (applyDecoderBtn) {
+        applyDecoderBtn.addEventListener('click', onApplyDecoderClicked);
+    }
+    if (resetDecoderBtn) {
+        resetDecoderBtn.addEventListener('click', onResetDecoderClicked);
+    }
 
     // Volume + comfort mode controls
     if (volumeSlider) {
@@ -546,6 +714,7 @@ window.addEventListener('DOMContentLoaded', () => {
     initializeElements();
     setupEventHandlers();
     populateSignalList();
+    loadDefaultDecoderSource();
     updateStatus('Starting Python worker...');
     updateProgress(5, 'Starting Python...');
     ensureComputeWorker();

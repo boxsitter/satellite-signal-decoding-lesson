@@ -3,6 +3,8 @@
 
 self.window = self;
 
+const WORKER_VERSION = '2026-01-14b';
+
 let pyodide = null;
 let ready = false;
 let initFailed = false;
@@ -33,16 +35,18 @@ async function init() {
   await pyodide.loadPackage(['numpy', 'pillow']);
 
   // Load local student-editable modules.
-  beacon('fetch', '/signal_preprocessor.py');
-  const preResp = await fetch('/signal_preprocessor.py');
+  // IMPORTANT: We do not import `signal_preprocessor.py` in the browser worker because it
+  // depends on SciPy. Preprocessing is done offline and the web UI loads pre-baked `.npy`.
   beacon('fetch', '/image_decoder.py');
-  const decResp = await fetch('/image_decoder.py');
-  if (!preResp.ok) throw new Error(`Failed to fetch /signal_preprocessor.py: HTTP ${preResp.status}`);
+  const decResp = await fetch(`/image_decoder.py?v=${encodeURIComponent(WORKER_VERSION)}`);
+  beacon('fetch', '/student_decoder.py');
+  const studentResp = await fetch(`/student_decoder.py?v=${encodeURIComponent(WORKER_VERSION)}`);
   if (!decResp.ok) throw new Error(`Failed to fetch /image_decoder.py: HTTP ${decResp.status}`);
-  const [pre, dec] = await Promise.all([preResp.text(), decResp.text()]);
+  if (!studentResp.ok) throw new Error(`Failed to fetch /student_decoder.py: HTTP ${studentResp.status}`);
+  const [dec, student] = await Promise.all([decResp.text(), studentResp.text()]);
   beacon('fs.writeFile');
-  pyodide.FS.writeFile('/signal_preprocessor.py', pre);
   pyodide.FS.writeFile('/image_decoder.py', dec);
+  pyodide.FS.writeFile('/student_decoder.py', student);
 
   // Import modules once (surface Python traceback on failure).
   beacon('runPython', 'import modules');
@@ -51,17 +55,17 @@ import sys
 if '/' not in sys.path:
     sys.path.insert(0, '/')
 
-import signal_preprocessor
 import image_decoder
+import student_decoder
 
 # Quick sanity check: ensure key functions exist.
-assert hasattr(signal_preprocessor, 'preprocess_signal')
 assert hasattr(image_decoder, 'decode_image')
+assert hasattr(student_decoder, 'decode_to_base64')
 `);
 
   ready = true;
   beacon('ready');
-  self.postMessage({ type: 'ready' });
+  self.postMessage({ type: 'ready', version: WORKER_VERSION });
 }
 
 const initPromise = init().catch((err) => {
@@ -82,27 +86,37 @@ self.onmessage = async (event) => {
   if (!ready) return;
 
   try {
-    if (msg.type === 'preprocess') {
-      // msg.wavBytes is transferred ArrayBuffer
-      const u8 = new Uint8Array(msg.wavBytes);
-      pyodide.globals.set('__wav_u8', u8);
-        const out = await pyodide.runPythonAsync(`
-import sys
-if '/' not in sys.path:
-    sys.path.insert(0, '/')
+    if (msg.type === 'load_prebaked_npy') {
+      // msg.npyBytes is a transferred ArrayBuffer containing a `.npy` file.
+      const u8 = new Uint8Array(msg.npyBytes);
+      pyodide.globals.set('__npy_u8', u8);
+      const out = await pyodide.runPythonAsync(`
 import numpy as np
-import signal_preprocessor
+import io
 
-wav_bytes = bytes(__wav_u8.to_py())
-normalized = signal_preprocessor.preprocess_signal(wav_bytes)
-normalized.astype(np.uint8).tolist()
+raw = bytes(__npy_u8.to_py())
+arr = np.load(io.BytesIO(raw), allow_pickle=False)
+arr.astype(np.uint8).tolist()
 `);
-      // Pyodide can return a PyProxy; convert to a plain JS array for postMessage.
+
       const normalizedJs = (out && typeof out.toJs === 'function')
         ? out.toJs({ create_proxies: false })
         : out;
       try { if (out && typeof out.destroy === 'function') out.destroy(); } catch (_) {}
-      self.postMessage({ type: 'preprocess_done', id: msg.id, normalized: normalizedJs });
+      self.postMessage({ type: 'prebaked_load_done', id: msg.id, normalized: normalizedJs });
+      return;
+    }
+
+    if (msg.type === 'set_decoder_source') {
+      const source = String(msg.source ?? '');
+      // Students edit `student_decoder.py`. `image_decoder.py` stays as the stable backend.
+      pyodide.FS.writeFile('/student_decoder.py', source);
+      await pyodide.runPythonAsync(`
+import importlib
+    import student_decoder
+    importlib.reload(student_decoder)
+`);
+      self.postMessage({ type: 'set_decoder_done', id: msg.id });
       return;
     }
 
@@ -112,17 +126,9 @@ normalized.astype(np.uint8).tolist()
 import sys
 if '/' not in sys.path:
     sys.path.insert(0, '/')
-import numpy as np
-import image_decoder
-import io, base64
+import student_decoder
 
-normalized = np.array(__normalized_list, dtype=np.uint8)
-pil_image = image_decoder.decode_image(normalized, save_full_image=False)
-
-buf = io.BytesIO()
-pil_image.save(buf, format='PNG')
-buf.seek(0)
-base64.b64encode(buf.read()).decode('ascii')
+student_decoder.decode_to_base64(__normalized_list)
 `);
       const b64Js = (b64 && typeof b64.toJs === 'function')
         ? b64.toJs({ create_proxies: false })
@@ -133,17 +139,16 @@ base64.b64encode(buf.read()).decode('ascii')
     }
 
     if (msg.type === 'reload_modules') {
-      const [pre, dec] = await Promise.all([
-        fetch('/signal_preprocessor.py').then(r => r.text()),
-        fetch('/image_decoder.py').then(r => r.text()),
-      ]);
-      pyodide.FS.writeFile('/signal_preprocessor.py', pre);
+      const dec = await fetch(`/image_decoder.py?v=${encodeURIComponent(WORKER_VERSION)}`).then(r => r.text());
+      const student = await fetch(`/student_decoder.py?v=${encodeURIComponent(WORKER_VERSION)}`).then(r => r.text());
       pyodide.FS.writeFile('/image_decoder.py', dec);
+      pyodide.FS.writeFile('/student_decoder.py', student);
       await pyodide.runPythonAsync(`
 import importlib
-import signal_preprocessor, image_decoder
-importlib.reload(signal_preprocessor)
+import image_decoder
+    import student_decoder
 importlib.reload(image_decoder)
+    importlib.reload(student_decoder)
 `);
       self.postMessage({ type: 'reload_done', id: msg.id });
       return;
