@@ -1,0 +1,89 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Process Signal",
+      "type": "shell",
+      "command": "python signal_preprocessor.py ./signals/${input:signalFile} && python image_decoder.py ./signals/${input:signalFile}",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Start Web Server",
+      "type": "shell",
+      "command": "python -m http.server 8000",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^$",
+          "file": 1,
+          "location": 2,
+          "message": 3
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "^.*Serving HTTP.*$",
+          "endsPattern": "^.*Serving HTTP on.*port 8000.*$"
+        }
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated",
+        "showReuseMessage": false,
+        "clear": false
+      }
+    },
+    {
+      "label": "Stop Web Server",
+      "type": "shell",
+      "command": "pkill -f 'python -m http.server 8000' || echo 'No web server running'",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      }
+    },
+    {
+      "label": "Restart Web Server",
+      "dependsOrder": "sequence",
+      "dependsOn": [
+        "Stop Web Server",
+        "Start Web Server"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      }
+    }
+  ],
+  "inputs": [
+    {
+      "id": "signalFile",
+      "type": "promptString",
+      "description": "Enter signal filename (without path, e.g., 'signal.wav'):",
+      "default": ""
+    }
+  ]
+}
