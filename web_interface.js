@@ -32,6 +32,12 @@ const workerPending = new Map();
 // Bump this to force browsers/SW to fetch a fresh worker script.
 const WORKER_VERSION = '2026-01-14b';
 
+function logToMission(text) {
+    if (!missionLog) return;
+    missionLog.textContent += text + '\n';
+    missionLog.scrollTop = missionLog.scrollHeight;
+}
+
 function ensureComputeWorker() {
     if (computeWorker || workerInitFailed) return;
     computeWorker = new Worker(`./pyodide_worker.js?v=${encodeURIComponent(WORKER_VERSION)}`);
@@ -50,10 +56,12 @@ function ensureComputeWorker() {
             return;
         }
         if (msg.type === 'py_stdout') {
+            logToMission(msg.text);
             console.log('[pyodide worker stdout]', msg.text);
             return;
         }
         if (msg.type === 'py_stderr') {
+            logToMission('[STDERR] ' + msg.text);
             console.warn('[pyodide worker stderr]', msg.text);
             return;
         }
@@ -64,8 +72,6 @@ function ensureComputeWorker() {
             workerReady = false;
             try { computeWorker.terminate(); } catch (_) {}
             computeWorker = null;
-            preprocessBtn.disabled = true;
-            decodeBtn.disabled = true;
             return;
         }
         if (msg.type === 'error') {
@@ -96,7 +102,7 @@ function workerCall(message, transfer) {
 }
 
 // Get DOM elements
-let signalSelector, loadBtn, preprocessBtn, decodeBtn, statusDiv, outputImage;
+let signalSelector, loadBtn, statusDiv, missionLog, outputImage;
 let progressContainer, progressBar, progressDetails;
 let audioInitialized = false;
 let volumeSlider, volumeValue, lessAnnoyingCheckbox;
@@ -115,9 +121,8 @@ let lowpassFilterNode = null;
 function initializeElements() {
     signalSelector = document.getElementById('signal-selector');
     loadBtn = document.getElementById('load-signal-btn');
-    preprocessBtn = document.getElementById('preprocess-btn');
-    decodeBtn = document.getElementById('decode-btn');
     statusDiv = document.getElementById('status');
+    missionLog = document.getElementById('mission-log');
     outputImage = document.getElementById('output-image');
     progressContainer = document.getElementById('progress-container');
     progressBar = document.getElementById('progress-bar');
@@ -188,8 +193,8 @@ async function loadDefaultDecoderSource() {
         if (applyDecoderBtn) applyDecoderBtn.disabled = true;
         if (resetDecoderBtn) resetDecoderBtn.disabled = true;
 
-        const resp = await fetch(`/student_decoder.py?v=${encodeURIComponent(WORKER_VERSION)}`, { cache: 'no-store' });
-        if (!resp.ok) throw new Error(`Failed to load /student_decoder.py (HTTP ${resp.status})`);
+        const resp = await fetch(`/mission_control.py?v=${encodeURIComponent(WORKER_VERSION)}`, { cache: 'no-store' });
+        if (!resp.ok) throw new Error(`Failed to load /mission_control.py (HTTP ${resp.status})`);
         const text = await resp.text();
 
         defaultDecoderSource = text;
@@ -452,8 +457,6 @@ async function loadSignal() {
             outputImage.classList.add('hidden');
             outputImage.removeAttribute('src');
         }
-        preprocessBtn.disabled = true;
-        decodeBtn.disabled = true;
         
         const response = await fetch(selected);
         if (!response.ok) {
@@ -488,8 +491,17 @@ async function loadSignal() {
         // This triggers a full decode; spectrogram plugin renders the entire file.
         ws.load(audioObjectUrl);
         
-        updateStatus(`Loaded ${selected} (${currentSignalData.byteLength} bytes). Ready to preprocess.`);
-        preprocessBtn.disabled = false;
+        updateStatus(`Audio loaded. Fetching preprocessed data...`);
+        const npyPath = prebakedNpyPathForWav(selected);
+        const npyResp = await fetch(npyPath);
+        if (!npyResp.ok) throw new Error(`Missing preprocessed data: ${npyPath}`);
+        const npyBytes = await npyResp.arrayBuffer();
+
+        updateStatus(`Sending data to Mission Control...`);
+        await workerCall({ type: 'load_prebaked_npy', npyBytes }, [npyBytes]);
+
+        updateStatus(`Mission Ready. Signal: ${selected}`);
+        if (applyDecoderBtn) applyDecoderBtn.disabled = false;
         
     } catch (error) {
         updateStatus(`Error loading signal: ${error.message}. Make sure you're running a local web server (e.g., 'python -m http.server 8000') and the file exists in the signals/ folder.`);
@@ -500,78 +512,13 @@ async function loadSignal() {
     }
 }
 
-// Run signal preprocessor (Python)
-async function runPreprocessor() {
-    if (!currentSignalPath) {
-        updateStatus('No signal loaded');
-        return;
-    }
-
-    // Preprocessing is done offline now (SciPy). In the browser, we simulate a short
-    // "processing" delay and load the pre-baked normalized signal from a `.npy` file.
+// Run the mission (Python)
+async function runMission() {
     ensureComputeWorker();
     if (workerInitFailed) {
         updateStatus('Python worker failed to initialize. Refresh and try again.');
         return;
     }
-    if (!workerReady) updateStatus('Starting Python worker...');
-
-    if (preprocessInFlight) return;
-    
-    try {
-        preprocessInFlight = true;
-        preprocessBtn.disabled = true;
-        decodeBtn.disabled = true;
-        updateStatus('Preprocessing signal...');
-        updateProgress(10, 'Initializing…');
-
-        // Fake a short delay so the lesson flow still makes sense.
-        await sleep(450);
-        updateProgress(55, 'Loading pre-baked data…');
-
-        const npyPath = prebakedNpyPathForWav(currentSignalPath);
-        const response = await fetch(npyPath, { cache: 'no-store' });
-        if (!response.ok) {
-            throw new Error(`Missing preprocessed file: ${npyPath} (HTTP ${response.status}). Run the offline preprocessor step.`);
-        }
-
-        const npyBytes = await response.arrayBuffer();
-        updateProgress(85, 'Preparing data for decoder…');
-
-        const timeoutMs = 30000;
-        const resp = await Promise.race([
-            workerCall({ type: 'load_prebaked_npy', npyBytes }, [npyBytes]),
-            new Promise((_, reject) => setTimeout(() => reject(new Error(
-                `Pre-baked load timed out after ${Math.round(timeoutMs / 1000)}s. Hard-refresh the page (Ctrl+Shift+R). If it persists, unregister the COOP/COEP service worker and reload.`
-            )), timeoutMs)),
-        ]);
-        normalizedSignal = resp.normalized;
-
-        updateProgress(100, 'Ready to decode');
-        await sleep(150);
-        hideProgress();
-        
-        updateStatus(`Preprocessing complete! Ready to decode.`);
-        decodeBtn.disabled = false;
-        
-    } catch (error) {
-        hideProgress();
-        updateStatus(`Error during preprocessing:\n${error.message}`);
-        console.error(error);
-    } finally {
-        preprocessInFlight = false;
-        preprocessBtn.disabled = false;
-    }
-}
-
-// Run image decoder (Python)
-async function runDecoder() {
-    if (!normalizedSignal) {
-        updateStatus('No preprocessed signal available');
-        return;
-    }
-    
-    ensureComputeWorker();
     if (!workerReady) {
         updateStatus('Python worker not ready yet. Please wait...');
         return;
@@ -581,29 +528,30 @@ async function runDecoder() {
     
     try {
         decodeInFlight = true;
-        decodeBtn.disabled = true;
-        updateStatus('Decoding image...');
-
-        // Run decoding against the current editor contents.
-        if (decoderTextarea) {
-            await applyDecoderSourceToWorker(getDecoderSource());
-        }
-
-        const timeoutMs = 180000;
-        const resp = await Promise.race([
-            workerCall({ type: 'decode', normalized: normalizedSignal }),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Decode timed out. Try again or refresh.')), timeoutMs)),
-        ]);
-        showImage(resp.imageBase64);
+        if (applyDecoderBtn) applyDecoderBtn.disabled = true;
         
-        updateStatus('Decoding complete! Image displayed below.');
+        updateStatus('Mission Control: Executing decoding sequence...');
+        
+        if (outputImage) outputImage.classList.add('hidden');
+        if (missionLog) missionLog.textContent = ''; // Clear log
+
+        // Run the mission in the worker
+        const source = getDecoderSource();
+        const resp = await workerCall({ type: 'run_mission', source });
+
+        if (resp.image) {
+            showImage(resp.image);
+            updateStatus('Mission Success: Image recovered from signal.');
+        } else {
+            updateStatus('Mission Complete. No image output generated.');
+        }
         
     } catch (error) {
-        updateStatus(`Error during decoding:\n${error.message}`);
+        updateStatus(`Mission Failed:\n${error.message}`);
         console.error(error);
     } finally {
         decodeInFlight = false;
-        decodeBtn.disabled = false;
+        if (applyDecoderBtn) applyDecoderBtn.disabled = false;
     }
 }
 
@@ -614,11 +562,9 @@ function setupEventHandlers() {
     });
 
     loadBtn.addEventListener('click', loadSignal);
-    preprocessBtn.addEventListener('click', runPreprocessor);
-    decodeBtn.addEventListener('click', runDecoder);
-
+    
     if (applyDecoderBtn) {
-        applyDecoderBtn.addEventListener('click', onApplyDecoderClicked);
+        applyDecoderBtn.addEventListener('click', runMission);
     }
     if (resetDecoderBtn) {
         resetDecoderBtn.addEventListener('click', onResetDecoderClicked);
