@@ -9,14 +9,21 @@ import decoder_api
 # Channel A (1040) + Channel B (1040) = 2080 pixels per line.
 ROW_WIDTH = 2080
 
+# Each scan line is separated by approximately 2000 samples
+# This is used as the search window to find the best sync position
+MINIMUM_ROW_SEPARATION = 2000
 
-def run_decoding_sequence():
+
+def run_decoding_sequence(signal_file=None):
     print("---------------------------------------")
     print(" INITIALIZING DECODING SEQUENCE (SOLUTION)...")
     print("---------------------------------------")
 
     # 1. LOAD SIGNAL
-    sensor_data = decoder_api.load_signal_data()
+    if signal_file:
+        sensor_data = decoder_api.load_signal_data(signal_file)
+    else:
+        sensor_data = decoder_api.load_signal_data()
     print(f" > Signal Loaded. Total data points: {len(sensor_data)}")
 
     # 2. PREPARE IMAGE
@@ -29,34 +36,35 @@ def run_decoding_sequence():
     # Keep scanning until we reach the end of the data stream
     while pointer < len(sensor_data) - ROW_WIDTH:
 
-        # Use the API to check for Sync A pattern
-        found_sync = decoder_api.check_for_sync(sensor_data, pointer)
+        # Find the BEST sync position within the next expected window
+        # This is important because there might be multiple positions that 
+        # look like a sync, but we want the one with the strongest match
+        sync_position = decoder_api.find_best_sync_in_window(
+            sensor_data, 
+            pointer, 
+            MINIMUM_ROW_SEPARATION
+        )
 
-        if found_sync:
+        if sync_position is not None:
             # --- SYNC DETECTED! -----------------------------------------------
-            # We found the start of a line. Snip out exactly one ROW_WIDTH.
+            # We found the best sync position. Extract exactly one row.
             
-            end_of_row = pointer + ROW_WIDTH 
+            end_of_row = sync_position + ROW_WIDTH 
             
             # Slice the data
-            pixel_row = sensor_data[pointer : end_of_row]
+            pixel_row = sensor_data[sync_position : end_of_row]
             
             # Add to image
             decoded_image.append(pixel_row)
             
             # Jump past this row to search for the next one.
-            # We subtract a small buffer (e.g., 20 pixels) to ensure we don't 
-            # overshoot the next sync marker if the signal period is slightly
-            # shorter than ROW_WIDTH (due to clock drift or Doppler).
-            pointer += (ROW_WIDTH - 20)
+            # Start searching from just after the minimum separation period
+            pointer = sync_position + MINIMUM_ROW_SEPARATION
 
         else:
-            # --- NO SYNC FOUND ------------------------------------------------
-            # If we don't find a sync marker, we must step forward gently 
-            # (by 1 or a few pixels) to keep searching. 
-            # Skipping by ROW_WIDTH would jump over the data we are looking for.
-            
-            pointer += 1  # Increment by 1 to scan thoroughly
+            # --- NO MORE SYNCS FOUND ------------------------------------------
+            # If we can't find any more sync markers, we've decoded all rows
+            break
 
     
     # 4. DISPLAY RESULTS
@@ -69,4 +77,8 @@ def run_decoding_sequence():
 
 
 if __name__ == "__main__":
-    run_decoding_sequence()
+    import sys
+    
+    # Allow optional command line argument for signal file
+    signal_file = sys.argv[1] if len(sys.argv) > 1 else None
+    run_decoding_sequence(signal_file)

@@ -21,37 +21,39 @@ SYNC_A_PATTERN = np.array([
 ], dtype=np.float32) - 128  # Center around 0 for correlation
 
 # Threshold for detecting the sync pattern
-# Perfect match is ~580,000. We set this to prevent false positives on noise.
-SYNC_DETECTION_THRESHOLD = 400000 
+# Perfect match is ~580,000. We set this lower to account for noise and signal drift.
+# Adjusted for float64 data type from preprocessor
+SYNC_DETECTION_THRESHOLD = 50000
 
-def load_signal_data(filename="signal1.normalized.npy"):
+# Image A (visible light channel) boundaries within each row
+# NOAA APT transmits two channels side-by-side in each 2080-pixel row
+IMAGE_A_START = 86
+IMAGE_A_END = 990 
+
+def load_signal_data(filename="signals/preprocessed/signal1.normalized.npy"):
     """
     Loads the pre-processed satellite signal.
     
     Returns:
-        list[int]: A massive list of sensor values (0-255).
+        numpy.ndarray: Array of sensor values (0-255).
     """
     print(f" [SYSTEM] Accessing data archive: {filename}")
     
     if not os.path.exists(filename):
         print(" [ERROR] CRITICAL: Signal data file not found.")
         print("         Ensure you have run the pre-baking script.")
-        return []
+        return np.array([])
 
     try:
-        # Load the numpy array
+        # Load the numpy array and keep it as numpy for performance
         data = np.load(filename)
         
-        # Ensure it's the correct type (0-255 integers)
-        # The pre-baker saves as float64, so we cast to int here.
-        data_int = data.astype(int)
-        
         print(" [SYSTEM] Data stream loaded successfully.")
-        return data_int.tolist()
+        return data
         
     except Exception as e:
         print(f" [ERROR] Corrupt data file: {e}")
-        return []
+        return np.array([])
 
 
 def check_for_sync(signal_data, pointer):
@@ -59,19 +61,18 @@ def check_for_sync(signal_data, pointer):
     Checks if the 'Sync A' pattern starts at the current pointer location.
     
     Args:
-        signal_data (list): The full signal list.
+        signal_data (numpy.ndarray): The full signal array.
         pointer (int): The current index to check.
         
     Returns:
         bool: True if a sync marker is found here, False otherwise.
     """
-    # Safety check: Don't read past the end of the list
+    # Safety check: Don't read past the end of the array
     if pointer + len(SYNC_A_PATTERN) > len(signal_data):
         return False
 
-    # Get the snippet of data at the pointer
-    # Convert to numpy for fast math (correlation)
-    snippet = np.array(signal_data[pointer : pointer + len(SYNC_A_PATTERN)])
+    # Get the snippet of data at the pointer (already numpy)
+    snippet = signal_data[pointer : pointer + len(SYNC_A_PATTERN)]
     
     # Center the data (0-255 -> -128 to 127) to match our sync pattern
     snippet_centered = snippet - 128
@@ -83,9 +84,56 @@ def check_for_sync(signal_data, pointer):
     return match_score > SYNC_DETECTION_THRESHOLD
 
 
+def find_best_sync_in_window(signal_data, start_pointer, window_size=2000):
+    """
+    Searches for the BEST sync position within a window.
+    This matches the original decoder behavior - finding the peak correlation.
+    Uses optimized vectorized correlation for speed.
+    
+    Args:
+        signal_data (numpy.ndarray): The full signal array.
+        start_pointer (int): Where to start searching.
+        window_size (int): How many pixels to search through (default 2000).
+        
+    Returns:
+        int or None: The position with the best sync match, or None if no good sync found.
+    """
+    # Calculate safe end pointer
+    sync_len = len(SYNC_A_PATTERN)
+    end_pointer = min(start_pointer + window_size, len(signal_data) - sync_len)
+    
+    if end_pointer <= start_pointer:
+        return None
+    
+    # Extract the search window
+    search_window = signal_data[start_pointer:end_pointer + sync_len]
+    
+    # Use numpy's correlate for vectorized computation (much faster!)
+    # We need to center the window and reverse the pattern for correlate
+    window_centered = search_window - 128
+    
+    # Compute correlation at all positions at once
+    # mode='valid' gives us correlations only where the pattern fully overlaps
+    correlations = np.correlate(window_centered, SYNC_A_PATTERN, mode='valid')
+    
+    # Find the position with maximum correlation
+    if len(correlations) == 0:
+        return None
+        
+    max_idx = np.argmax(correlations)
+    max_score = correlations[max_idx]
+    
+    # Only return if we found something good enough
+    if max_score > SYNC_DETECTION_THRESHOLD:
+        return start_pointer + max_idx
+    else:
+        return None
+
+
 def display_image(image_rows):
     """
     Takes the 2D list of pixels and converts it to a visible image.
+    Automatically crops to Image A (visible light channel).
     
     Args:
         image_rows (list[list[int]]): The decoded image data.
@@ -109,6 +157,11 @@ def display_image(image_rows):
             # Clip row to width or pad if necessary
             length = min(len(row), width)
             img_array[i, :length] = row[:length]
+
+        # Extract Image A (visible light channel) from the full transmission
+        print(" [SYSTEM] Extracting Image A (visible light channel)...")
+        img_array = img_array[:, IMAGE_A_START:IMAGE_A_END]
+        print(f" [SYSTEM] Image A size: {img_array.shape[1]} x {img_array.shape[0]} pixels")
 
         # Convert to PIL Image
         img = Image.fromarray(img_array)

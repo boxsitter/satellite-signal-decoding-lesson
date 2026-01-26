@@ -7,7 +7,7 @@ import io
 import numpy as np
 
 import signal_preprocessor
-import image_decoder
+import image_decoder_original
 
 
 def __export__():
@@ -33,7 +33,7 @@ def preprocess_wav(wav_u8):
 def decode_to_base64(normalized_list):
     """Accepts a list[int] of normalized samples, returns base64 PNG string."""
     normalized = np.array(normalized_list, dtype=np.uint8)
-    pil_image = image_decoder.decode_image(normalized, save_full_image=False)
+    pil_image = image_decoder_original.decode_image(normalized, save_full_image=False)
 
     buffer = io.BytesIO()
     pil_image.save(buffer, format="PNG")

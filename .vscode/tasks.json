@@ -4,7 +4,7 @@
     {
       "label": "Process Signal",
       "type": "shell",
-      "command": "python signal_preprocessor.py ./signals/${input:signalFile} && python image_decoder.py ./signals/${input:signalFile}",
+      "command": "python signal_preprocessor.py ./signals/${input:signalFile} ./signals/preprocessed/${input:signalFile}.normalized.npy && python image_decoder_original.py ./signals/preprocessed/${input:signalFile}.normalized.npy",
       "problemMatcher": [],
       "presentation": {
         "echo": true,
@@ -76,6 +76,42 @@
         "showReuseMessage": true,
         "clear": false
       }
+    },
+    {
+      "label": "Decode Preprocessed Signal",
+      "type": "shell",
+      "command": "python image_decoder_original.py ./signals/preprocessed/${input:preprocessedFile}",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
+    },
+    {
+      "label": "Mission Control: Decode Signal (Timed)",
+      "type": "shell",
+      "command": "time python mission_control_solution.py ./signals/preprocessed/${input:preprocessedFile}",
+      "problemMatcher": [],
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
     }
   ],
   "inputs": [
@@ -84,6 +120,18 @@
       "type": "promptString",
       "description": "Enter signal filename (without path, e.g., 'signal.wav'):",
       "default": ""
+    },
+    {
+      "id": "preprocessedFile",
+      "type": "pickString",
+      "description": "Select preprocessed signal file:",
+      "options": [
+        "signal1.normalized.npy",
+        "signal2.normalized.npy",
+        "signal3.normalized.npy",
+        "noise_48000hz.normalized.npy"
+      ],
+      "default": "signal1.normalized.npy"
     }
   ]
 }
