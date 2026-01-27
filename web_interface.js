@@ -3,6 +3,428 @@
  * Handles UI interactions and calls Python modules via PyScript
  */
 
+// Tab switching
+function switchLeftPanel(panelName) {
+    document.querySelectorAll('.left-panel .panel-content').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    document.querySelectorAll('.left-panel .panel-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    const panel = document.getElementById(panelName + '-panel');
+    if (panel) {
+        panel.classList.add('active');
+    }
+    
+    const tabButtons = document.querySelectorAll('.left-panel .panel-tab');
+    tabButtons.forEach((tab, index) => {
+        const panelNames = ['audio', 'decoder'];
+        if (panelNames[index] === panelName) {
+            tab.classList.add('active');
+        }
+    });
+    
+    // Show/hide decoder-only buttons
+    const decoderOnlyButtons = document.querySelectorAll('.decoder-only');
+    decoderOnlyButtons.forEach(btn => {
+        if (panelName === 'decoder') {
+            btn.style.display = '';
+        } else {
+            btn.style.display = 'none';
+        }
+    });
+    
+    // Refresh CodeMirror when decoder panel is shown
+    if (panelName === 'decoder' && decoderEditor) {
+        decoderEditor.refresh();
+    }
+}
+
+function switchAudioSubTab(tabName) {
+    document.querySelectorAll('.nested-tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+    document.querySelectorAll('.nested-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    const content = document.getElementById(tabName + '-tab');
+    if (content) {
+        content.classList.add('active');
+    }
+    
+    const tabButtons = document.querySelectorAll('.nested-tab');
+    tabButtons.forEach((tab, index) => {
+        const tabNames = ['audio-viz', 'data-viz'];
+        if (tabNames[index] === tabName) {
+            tab.classList.add('active');
+        }
+    });
+}
+
+function switchRightPanel(panelName) {
+    document.querySelectorAll('.right-panel .panel-content').forEach(panel => {
+        panel.classList.remove('active');
+    });
+    document.querySelectorAll('.right-panel .panel-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    const panel = document.getElementById(panelName + '-panel');
+    if (panel) {
+        panel.classList.add('active');
+    }
+    
+    const tabButtons = document.querySelectorAll('.right-panel .panel-tab');
+    tabButtons.forEach((tab, index) => {
+        const panelNames = ['output', 'terminal', 'api'];
+        if (panelNames[index] === panelName) {
+            tab.classList.add('active');
+        }
+    });
+    
+    // Hide notification dot when switching to output panel
+    if (panelName === 'output') {
+        const notification = document.getElementById('output-notification');
+        if (notification) {
+            notification.classList.add('hidden');
+        }
+    }
+    
+    // Refresh CodeMirror when API panel is shown
+    if (panelName === 'api' && apiReferenceEditor) {
+        apiReferenceEditor.refresh();
+    }
+}
+
+// Legacy function for compatibility
+function switchOutputPanel(panelName) {
+    switchRightPanel(panelName);
+}
+
+async function exportProject() {
+    try {
+        // Check if JSZip is available
+        if (typeof JSZip === 'undefined') {
+            alert('Export functionality is not available. Please refresh the page and try again.');
+            return;
+        }
+        
+        // Check if there's an image to export
+        const img = document.getElementById('output-image');
+        if (!img || img.classList.contains('hidden') || !img.src) {
+            alert('No decoded image available to export. Run the mission first.');
+            return;
+        }
+        
+        // Get the current student code
+        const studentCode = getDecoderSource();
+        if (!studentCode) {
+            alert('No code to export.');
+            return;
+        }
+        
+        // Create a new JSZip instance
+        const zip = new JSZip();
+        
+        // Add the student code
+        zip.file('mission_control.py', studentCode);
+        
+        // Convert image to blob and add to zip
+        // Extract base64 data from data URL
+        const base64Data = img.src.split(',')[1];
+        zip.file('decoded_earth.png', base64Data, { base64: true });
+        
+        // Add a README
+        const readme = `NOAA Satellite Signal Decoder - Exported Project
+======================================================
+
+This export contains:
+- mission_control.py: Your decoder implementation
+- decoded_earth.png: The decoded satellite image
+
+Export Date: ${new Date().toLocaleString()}
+
+To run this code locally:
+1. Install required packages: pip install numpy pillow
+2. Ensure you have the signal data files
+3. Run: python mission_control.py
+`;
+        zip.file('README.txt', readme);
+        
+        // Generate the zip file
+        const blob = await zip.generateAsync({ type: 'blob' });
+        
+        // Create download link
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        
+        // Generate filename with timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+        a.download = `satellite-decoder-${timestamp}.zip`;
+        
+        // Trigger download
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        // Clean up the object URL
+        URL.revokeObjectURL(url);
+        
+        console.log('Project exported successfully');
+        
+    } catch (error) {
+        console.error('Export failed:', error);
+        alert('Failed to export project. Please try again.');
+    }
+}
+
+function visualizeSignalData(signalArray, centerSample) {
+    if (!signalArray || signalArray.length === 0) {
+        return;
+    }
+    
+    // If centerSample not provided, default to start
+    if (centerSample === undefined || centerSample === null) {
+        centerSample = 0;
+    }
+    
+    // Calculate statistics
+    const length = signalArray.length;
+    const min = Math.min(...signalArray.slice(0, Math.min(10000, length)));
+    const max = Math.max(...signalArray.slice(0, Math.min(10000, length)));
+    const sum = signalArray.slice(0, Math.min(10000, length)).reduce((a, b) => a + b, 0);
+    const mean = sum / Math.min(10000, length);
+    
+    // Display statistics
+    const statsDiv = document.getElementById('signal-stats');
+    if (statsDiv) {
+        statsDiv.innerHTML = `
+            <div><strong>Total Samples:</strong> ${length.toLocaleString()} points</div>
+            <div><strong>Sample Rate:</strong> 4160 Hz (after preprocessing)</div>
+            <div><strong>Duration:</strong> ~${(length / 4160).toFixed(2)} seconds</div>
+            <div><strong>Current Position:</strong> Sample ${centerSample.toLocaleString()} (${(centerSample / 4160).toFixed(2)}s)</div>
+            <div><strong>Value Range:</strong> ${min.toFixed(2)} to ${max.toFixed(2)}</div>
+            <div><strong>Mean Value:</strong> ${mean.toFixed(2)}</div>
+        `;
+    }
+    
+    // Calculate window around center sample
+    const windowSize = signalZoomLevel;
+    const halfWindow = Math.floor(windowSize / 2);
+    const startSample = Math.max(0, centerSample - halfWindow);
+    const endSample = Math.min(length, centerSample + halfWindow);
+    
+    // Draw signal visualization
+    const canvas = document.getElementById('signal-canvas');
+    const canvasHeading = canvas?.previousElementSibling;
+    if (canvasHeading && canvasHeading.tagName === 'H3') {
+        canvasHeading.textContent = `Signal Window (Samples ${startSample.toLocaleString()}-${endSample.toLocaleString()})`;
+    }
+    
+    // Draw signal visualization
+    if (canvas) {
+        const ctx = canvas.getContext('2d');
+        
+        // Set canvas resolution for sharp rendering
+        const displayWidth = 800;
+        const displayHeight = 300;
+        const dpr = window.devicePixelRatio || 1;
+        
+        // Set actual canvas size (accounting for device pixel ratio)
+        canvas.width = displayWidth * dpr;
+        canvas.height = displayHeight * dpr;
+        
+        // Set display size via CSS
+        canvas.style.width = displayWidth + 'px';
+        canvas.style.height = displayHeight + 'px';
+        
+        // Scale context to match device pixel ratio
+        ctx.scale(dpr, dpr);
+        
+        const width = displayWidth;
+        const height = displayHeight;
+        
+        // Clear canvas
+        ctx.fillStyle = 'white';
+        ctx.fillRect(0, 0, width, height);
+        
+        // Draw grid
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 1;
+        for (let i = 0; i <= 10; i++) {
+            const y = (i / 10) * height;
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(width, y);
+            ctx.stroke();
+        }
+        
+        // Draw center line (playhead position)
+        ctx.strokeStyle = '#e74c3c';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const centerX = width / 2;
+        ctx.moveTo(centerX, 0);
+        ctx.lineTo(centerX, height);
+        ctx.stroke();
+        
+        // Sample the signal window using min-max envelope for anti-aliasing
+        const samplesToShow = endSample - startSample;
+        const samplesPerPixel = samplesToShow / width;
+        
+        ctx.strokeStyle = '#3498db';
+        ctx.fillStyle = '#3498db';
+        ctx.lineWidth = 1;
+        
+        if (samplesPerPixel <= 1) {
+            // High zoom: draw line through each sample
+            ctx.beginPath();
+            for (let i = 0; i < width; i++) {
+                const sampleIndex = startSample + Math.floor(i * samplesPerPixel);
+                if (sampleIndex >= endSample) break;
+                
+                const value = signalArray[sampleIndex];
+                const x = i;
+                const y = height - (value / 255) * height;
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            ctx.stroke();
+        } else {
+            // Low zoom: use min-max envelope to prevent aliasing
+            for (let i = 0; i < width; i++) {
+                const startIdx = startSample + Math.floor(i * samplesPerPixel);
+                const endIdx = startSample + Math.floor((i + 1) * samplesPerPixel);
+                
+                if (startIdx >= endSample) break;
+                
+                // Find min and max in this pixel's sample range
+                let min = Infinity;
+                let max = -Infinity;
+                for (let j = startIdx; j < Math.min(endIdx, endSample); j++) {
+                    const value = signalArray[j];
+                    if (value < min) min = value;
+                    if (value > max) max = value;
+                }
+                
+                // Draw vertical line from min to max
+                const x = i;
+                const yMin = height - (min / 255) * height;
+                const yMax = height - (max / 255) * height;
+                
+                ctx.beginPath();
+                ctx.moveTo(x, yMax);
+                ctx.lineTo(x, yMin);
+                ctx.stroke();
+            }
+        }
+        
+        // Draw axis labels
+        ctx.fillStyle = 'black';
+        ctx.font = '11px monospace';
+        ctx.fillText('0', 5, height - 5);
+        ctx.fillText('255', 5, 15);
+        ctx.fillText(`Samples ${startSample.toLocaleString()} - ${endSample.toLocaleString()}`, width - 220, height - 5);
+        
+        // Draw raw data window indicator (100 samples around playhead)
+        const rawDataWindowSize = 100;
+        const rawDataStart = centerSample;
+        const rawDataEnd = centerSample + rawDataWindowSize;
+        
+        // Calculate pixel positions for the raw data window
+        if (rawDataStart >= startSample && rawDataStart < endSample) {
+            const rawStartPixel = ((rawDataStart - startSample) / samplesToShow) * width;
+            const rawEndPixel = Math.min(((rawDataEnd - startSample) / samplesToShow) * width, width);
+            const rawWidth = rawEndPixel - rawStartPixel;
+            
+            // Draw semi-transparent overlay
+            ctx.fillStyle = 'rgba(46, 204, 113, 0.2)'; // Green with 20% opacity
+            ctx.fillRect(rawStartPixel, 0, rawWidth, height);
+            
+            // Draw borders
+            ctx.strokeStyle = 'rgba(46, 204, 113, 0.8)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(rawStartPixel, 0);
+            ctx.lineTo(rawStartPixel, height);
+            ctx.stroke();
+            
+            if (rawEndPixel < width) {
+                ctx.beginPath();
+                ctx.moveTo(rawEndPixel, 0);
+                ctx.lineTo(rawEndPixel, height);
+                ctx.stroke();
+            }
+            
+            // Add label
+            ctx.fillStyle = 'rgba(46, 204, 113, 1)';
+            ctx.font = 'bold 10px monospace';
+            const labelX = Math.min(rawStartPixel + 5, width - 80);
+            ctx.fillText('Raw Data', labelX, 15);
+        }
+    }
+    
+    // Show raw data sample around center
+    const rawSamplePre = document.getElementById('signal-raw-sample');
+    if (rawSamplePre) {
+        const rawStart = Math.max(0, centerSample);
+        const rawEnd = Math.min(length, centerSample + 100);
+        const sample = Array.from(signalArray.slice(rawStart, rawEnd));
+        
+        // Update the heading
+        const rawHeading = rawSamplePre.previousElementSibling;
+        if (rawHeading && rawHeading.tagName === 'H3') {
+            rawHeading.textContent = `Raw Data (Samples ${rawStart.toLocaleString()}-${rawEnd.toLocaleString()})`;
+        }
+        
+        let formatted = '';
+        for (let i = 0; i < sample.length; i += 10) {
+            const chunk = sample.slice(i, i + 10);
+            const actualIndex = rawStart + i;
+            const values = chunk.map(v => v.toFixed(1).padStart(6, ' ')).join(', ');
+            formatted += `[${actualIndex.toString().padStart(7, ' ')}]: ${values}\n`;
+        }
+        rawSamplePre.textContent = formatted;
+    }
+}
+
+function updateSignalVisualization() {
+    if (!currentSignalData) return;
+    
+    // Get current time from WaveSurfer
+    if (!waveSurfer) return;
+    
+    // Convert current audio time to sample number
+    // Sample rate is 4160 Hz after preprocessing
+    const currentTime = waveSurfer.getCurrentTime();
+    const sampleRate = 4160;
+    const centerSample = Math.floor(currentTime * sampleRate);
+    
+    // Update the visualization
+    visualizeSignalData(currentSignalData, centerSample);
+}
+
+function showImageOnOutputTab(imageData) {
+    const outputImage = document.getElementById('output-image');
+    const outputEmpty = document.getElementById('output-empty');
+    
+    if (imageData) {
+        outputImage.src = imageData;
+        outputImage.classList.remove('hidden');
+        if (outputEmpty) outputEmpty.classList.add('hidden');
+    } else {
+        outputImage.classList.add('hidden');
+        if (outputEmpty) outputEmpty.classList.remove('hidden');
+    }
+}
+
 let currentSignalData = null;
 let normalizedSignal = null;
 let currentSignalPath = null;
@@ -12,6 +434,7 @@ let pyWorker = null;
 let pyWorkerApi = null;
 let preprocessInFlight = false;
 let decodeInFlight = false;
+let currentLoadingAbortController = null;
 
 // Audio UI/state
 let audioEl, audioToggleBtn, audioScrub, audioTime;
@@ -22,6 +445,8 @@ let waveSurfer = null;
 let scrubIsDragging = false;
 let wsSpectrogramPlayheadEl = null;
 let spectrogramIsDragging = false;
+let audioViewerLoading = null;
+let audioViewerContent = null;
 
 // Dedicated Pyodide worker (no SharedArrayBuffer required)
 let computeWorker = null;
@@ -112,8 +537,12 @@ let decoderTextarea, applyDecoderBtn, resetDecoderBtn, decoderStatus;
 let decoderEditor = null;
 let defaultDecoderSource = null;
 let lastAppliedDecoderSource = null;
+let apiReferenceEditor = null;
+let signalZoomLevel = 8000; // Default zoom level in samples
+let signalCanvasDragging = false;
+let signalCanvasDragStart = 0;
 
-let uiVolume = 0.5;
+let uiVolume = 0.5; // Default to 50% volume (25 on slider)
 let uiLessAnnoying = true;
 let lowpassFilterNode = null;
 
@@ -139,10 +568,22 @@ function initializeElements() {
     audioTime = document.getElementById('audio-time');
     wsWaveformEl = document.getElementById('ws-waveform');
     wsSpectrogramEl = document.getElementById('ws-spectrogram');
+    audioViewerLoading = document.getElementById('audio-viewer-loading');
+    audioViewerContent = document.getElementById('audio-viewer-content');
 
     volumeSlider = document.getElementById('volume-slider');
     volumeValue = document.getElementById('volume-value');
     lessAnnoyingCheckbox = document.getElementById('less-annoying');
+}
+
+function showAudioLoading() {
+    if (audioViewerLoading) audioViewerLoading.classList.remove('hidden');
+    if (audioViewerContent) audioViewerContent.classList.add('loading');
+}
+
+function hideAudioLoading() {
+    if (audioViewerLoading) audioViewerLoading.classList.add('hidden');
+    if (audioViewerContent) audioViewerContent.classList.remove('loading');
 }
 
 function setDecoderStatus(text) {
@@ -169,6 +610,49 @@ function initDecoderEditor() {
     });
 }
 
+function initApiReferenceEditor() {
+    const apiTextarea = document.getElementById('api-reference');
+    if (!apiTextarea) return;
+    if (apiReferenceEditor) return;
+
+    if (!window.CodeMirror) {
+        apiTextarea.style.width = '100%';
+        apiTextarea.style.minHeight = '360px';
+        return;
+    }
+
+    apiReferenceEditor = window.CodeMirror.fromTextArea(apiTextarea, {
+        mode: 'python',
+        lineNumbers: true,
+        indentUnit: 4,
+        tabSize: 4,
+        viewportMargin: Infinity,
+        readOnly: true,
+        cursorBlinkRate: -1, // Hide cursor for read-only
+    });
+}
+
+async function loadApiReference() {
+    try {
+        const resp = await fetch('/decoder_api.py', { cache: 'no-store' });
+        if (!resp.ok) throw new Error(`Failed to load decoder_api.py (HTTP ${resp.status})`);
+        const text = await resp.text();
+        
+        const apiTextarea = document.getElementById('api-reference');
+        if (apiTextarea) {
+            apiTextarea.value = text;
+        }
+        
+        initApiReferenceEditor();
+        
+        if (apiReferenceEditor) {
+            apiReferenceEditor.setValue(text);
+        }
+    } catch (e) {
+        console.error('Failed to load API reference:', e);
+    }
+}
+
 function getDecoderSource() {
     if (decoderEditor) return decoderEditor.getValue();
     if (decoderTextarea) return decoderTextarea.value;
@@ -181,16 +665,16 @@ function setDecoderSource(source) {
         decoderEditor.setValue(s);
         return;
     }
-    if (decoderTextarea) decoderTextarea.value = s;
+    if (decoderTextarea) {
+        decoderTextarea.value = s;
+    }
 }
 
 async function loadDefaultDecoderSource() {
     if (!decoderTextarea) return;
-    initDecoderEditor();
 
     try {
         setDecoderStatus('Loading default decoder…');
-        if (applyDecoderBtn) applyDecoderBtn.disabled = true;
         if (resetDecoderBtn) resetDecoderBtn.disabled = true;
 
         const resp = await fetch(`/mission_control.py?v=${encodeURIComponent(WORKER_VERSION)}`, { cache: 'no-store' });
@@ -198,12 +682,13 @@ async function loadDefaultDecoderSource() {
         const text = await resp.text();
 
         defaultDecoderSource = text;
-        setDecoderSource(text);
         lastAppliedDecoderSource = null;
+        
+        // Set the code using the proper setter which handles both textarea and CodeMirror
+        setDecoderSource(text);
 
-        if (applyDecoderBtn) applyDecoderBtn.disabled = false;
         if (resetDecoderBtn) resetDecoderBtn.disabled = false;
-        setDecoderStatus('Loaded.');
+        setDecoderStatus('Ready.');
     } catch (e) {
         console.error(e);
         setDecoderStatus(`Failed: ${e?.message || String(e)}`);
@@ -236,14 +721,29 @@ async function onApplyDecoderClicked() {
 
 function onResetDecoderClicked() {
     if (defaultDecoderSource == null) return;
+    
+    // Show confirmation dialog
+    const confirmed = confirm(
+        "Are you sure you want to reset?\n\n" +
+        "This will discard all your current changes and restore the default code. " +
+        "This action cannot be undone."
+    );
+    
+    if (!confirmed) {
+        return; // User cancelled
+    }
+    
     setDecoderSource(defaultDecoderSource);
     lastAppliedDecoderSource = null;
     setDecoderStatus('Reset.');
 }
 
 function setVolumeUI(vol01) {
-    uiVolume = Math.max(0, Math.min(1, Number(vol01)));
-    if (volumeSlider) volumeSlider.value = String(Math.round(uiVolume * 100));
+    // vol01 is actual volume (0 to 2 range)
+    // Convert back to slider value (0-100)
+    uiVolume = Math.max(0, Math.min(2, Number(vol01)));
+    const sliderVal = uiVolume * 50;
+    if (volumeSlider) volumeSlider.value = String(Math.round(sliderVal));
     if (volumeValue) volumeValue.textContent = `${Math.round(uiVolume * 100)}%`;
 }
 
@@ -360,8 +860,14 @@ function ensureWaveSurfer() {
         applyAudioComfortSettings();
         syncUI();
     });
-    waveSurfer.on('audioprocess', syncUI);
-    waveSurfer.on('seek', syncUI);
+    waveSurfer.on('audioprocess', () => {
+        syncUI();
+        updateSignalVisualization();
+    });
+    waveSurfer.on('seek', () => {
+        syncUI();
+        updateSignalVisualization();
+    });
     waveSurfer.on('play', syncUI);
     waveSurfer.on('pause', syncUI);
     waveSurfer.on('finish', syncUI);
@@ -417,8 +923,25 @@ function prebakedNpyPathForWav(wavPath) {
 
 // Convert PIL Image to base64 and display
 function showImage(imageData) {
-    outputImage.src = `data:image/png;base64,${imageData}`;
+    const imgSrc = `data:image/png;base64,${imageData}`;
+    outputImage.src = imgSrc;
     outputImage.classList.remove('hidden');
+    
+    // Show export button when image is available
+    const exportBtn = document.getElementById('export-btn');
+    if (exportBtn) {
+        exportBtn.classList.remove('hidden');
+    }
+    
+    // Update the output panel
+    showImageOnOutputTab(imgSrc);
+    
+    // Show notification dot if output panel is not currently active
+    const outputPanel = document.getElementById('output-panel');
+    const notification = document.getElementById('output-notification');
+    if (outputPanel && !outputPanel.classList.contains('active') && notification) {
+        notification.classList.remove('hidden');
+    }
 }
 
 // Populate signal file list
@@ -447,8 +970,19 @@ async function loadSignal() {
         return;
     }
     
+    // Abort any previous loading operation
+    if (currentLoadingAbortController) {
+        currentLoadingAbortController.abort();
+    }
+    currentLoadingAbortController = new AbortController();
+    const abortSignal = currentLoadingAbortController.signal;
+    
     try {
         loadBtn.disabled = true;
+        
+        // Show loading overlay
+        showAudioLoading();
+        
         updateStatus(`Loading ${selected}...`);
 
         // Reset UI state for a fresh run.
@@ -458,7 +992,7 @@ async function loadSignal() {
             outputImage.removeAttribute('src');
         }
         
-        const response = await fetch(selected);
+        const response = await fetch(selected, { signal: abortSignal });
         if (!response.ok) {
             throw new Error(`Failed to load file: HTTP ${response.status}`);
         }
@@ -487,15 +1021,42 @@ async function loadSignal() {
         }
         if (audioTime) audioTime.textContent = '0:00 / 0:00';
 
+        // Load audio in WaveSurfer and wait for it to be ready
         const ws = ensureWaveSurfer();
+        
+        // Create a promise that resolves when WaveSurfer is ready
+        const waveSurferReady = new Promise((resolve) => {
+            ws.once('ready', resolve);
+        });
+        
         // This triggers a full decode; spectrogram plugin renders the entire file.
         ws.load(audioObjectUrl);
         
+        updateStatus(`Rendering waveform and spectrogram...`);
+        
+        // Wait for WaveSurfer to finish loading and rendering
+        await waveSurferReady;
+        
         updateStatus(`Audio loaded. Fetching preprocessed data...`);
         const npyPath = prebakedNpyPathForWav(selected);
-        const npyResp = await fetch(npyPath);
+        const npyResp = await fetch(npyPath, { signal: abortSignal });
         if (!npyResp.ok) throw new Error(`Missing preprocessed data: ${npyPath}`);
         const npyBytes = await npyResp.arrayBuffer();
+
+        // Parse the signal data BEFORE transferring to worker
+        // Simple numpy .npy parser for float64 arrays
+        const npyView = new DataView(npyBytes);
+        const headerLen = npyView.getUint16(8, true); // Little-endian
+        const arrayDataStart = 10 + headerLen;
+        
+        // Create Float64Array from the data portion
+        const signalData = new Float64Array(npyBytes, arrayDataStart);
+        
+        // Clone the data for visualization (since we'll transfer npyBytes to worker)
+        const signalDataCopy = new Float64Array(signalData);
+        
+        // Store for playhead updates
+        currentSignalData = signalDataCopy;
 
         updateStatus(`Sending data to Mission Control...`);
         await workerCall({ type: 'load_prebaked_npy', npyBytes }, [npyBytes]);
@@ -503,12 +1064,33 @@ async function loadSignal() {
         updateStatus(`Mission Ready. Signal: ${selected}`);
         if (applyDecoderBtn) applyDecoderBtn.disabled = false;
         
+        // Visualize the signal data at the start
+        visualizeSignalData(signalDataCopy, 0);
+        
+        // Add listener to update visualization on playhead changes
+        const audioPlayer = document.getElementById('audio-player');
+        if (audioPlayer) {
+            // Remove any existing listener
+            audioPlayer.removeEventListener('timeupdate', updateSignalVisualization);
+            // Add new listener
+            audioPlayer.addEventListener('timeupdate', updateSignalVisualization);
+        }
+        
+        // Hide loading overlay once everything is ready
+        hideAudioLoading();
+        
     } catch (error) {
+        if (error.name === 'AbortError') {
+            console.log('Load operation was aborted');
+            return;
+        }
+        hideAudioLoading();
         updateStatus(`Error loading signal: ${error.message}. Make sure you're running a local web server (e.g., 'python -m http.server 8000') and the file exists in the signals/ folder.`);
         console.error('Fetch error:', error);
         console.error('Attempted to load:', selected);
     } finally {
         loadBtn.disabled = false;
+        currentLoadingAbortController = null;
     }
 }
 
@@ -575,7 +1157,11 @@ function setupEventHandlers() {
         // Set defaults
         setVolumeUI(Number(volumeSlider.value) / 100);
         volumeSlider.addEventListener('input', () => {
-            setVolumeUI(Number(volumeSlider.value) / 100);
+            // Slider range 0-100, where 50 = 100% volume
+            // Formula: actualVolume = sliderValue / 50
+            const sliderVal = Number(volumeSlider.value);
+            const actualVolume = sliderVal / 50; // 0-2 range
+            setVolumeUI(actualVolume);
             applyAudioComfortSettings();
         });
     } else {
@@ -609,6 +1195,9 @@ function setupEventHandlers() {
                 const frac = Number(audioScrub.value);
                 if (!Number.isFinite(frac)) return;
                 ws.seekTo(Math.max(0, Math.min(1, frac)));
+                
+                // Update signal visualization when scrubbing
+                updateSignalVisualization();
             } catch (e) {
                 console.error(e);
             }
@@ -617,6 +1206,99 @@ function setupEventHandlers() {
         audioScrub?.addEventListener('pointerdown', () => { scrubIsDragging = true; });
         audioScrub?.addEventListener('pointerup', () => { scrubIsDragging = false; });
         audioScrub?.addEventListener('change', () => { scrubIsDragging = false; });
+
+        // Signal zoom slider
+        const signalZoomSlider = document.getElementById('signal-zoom-slider');
+        const signalZoomLabel = document.getElementById('signal-zoom-label');
+        signalZoomSlider?.addEventListener('input', () => {
+            signalZoomLevel = Number(signalZoomSlider.value);
+            if (signalZoomLabel) {
+                signalZoomLabel.textContent = `${signalZoomLevel.toLocaleString()} samples`;
+            }
+            // Update visualization immediately
+            updateSignalVisualization();
+        });
+
+        // Signal canvas dragging for scrubbing
+        const signalCanvas = document.getElementById('signal-canvas');
+        if (signalCanvas) {
+            signalCanvas.style.cursor = 'grab';
+            
+            signalCanvas.addEventListener('pointerdown', (e) => {
+                signalCanvasDragging = true;
+                signalCanvasDragStart = e.clientX;
+                signalCanvas.style.cursor = 'grabbing';
+                e.preventDefault();
+            });
+            
+            signalCanvas.addEventListener('pointermove', (e) => {
+                if (!signalCanvasDragging) return;
+                if (!waveSurfer || !currentSignalData) return;
+                
+                const deltaX = e.clientX - signalCanvasDragStart;
+                signalCanvasDragStart = e.clientX;
+                
+                // Calculate time delta based on drag distance and zoom level
+                // More zoomed in = more sensitive (smaller window = larger time change per pixel)
+                const canvasWidth = 800; // Display width
+                const sampleRate = 4160;
+                const samplesPerPixel = signalZoomLevel / canvasWidth;
+                const sampleDelta = -deltaX * samplesPerPixel; // Negative because drag left = move forward
+                const timeDelta = sampleDelta / sampleRate;
+                
+                // Update audio position
+                const currentTime = waveSurfer.getCurrentTime();
+                const duration = waveSurfer.getDuration();
+                const newTime = Math.max(0, Math.min(duration, currentTime + timeDelta));
+                
+                waveSurfer.seekTo(newTime / duration);
+                
+                e.preventDefault();
+            });
+            
+            signalCanvas.addEventListener('pointerup', () => {
+                signalCanvasDragging = false;
+                signalCanvas.style.cursor = 'grab';
+            });
+            
+            signalCanvas.addEventListener('pointerleave', () => {
+                if (signalCanvasDragging) {
+                    signalCanvasDragging = false;
+                    signalCanvas.style.cursor = 'grab';
+                }
+            });
+        }
+
+        // Scrub directly on the waveform (click + drag)
+        if (wsWaveformEl) {
+            wsWaveformEl.addEventListener('pointerdown', (ev) => {
+                try {
+                    const ws = ensureWaveSurfer();
+                    scrubIsDragging = true;
+                    wsWaveformEl.setPointerCapture(ev.pointerId);
+                    const frac = fracFromPointerEvent(ev, wsWaveformEl);
+                    ws.seekTo(frac);
+                } catch (e) {
+                    console.error(e);
+                }
+            });
+            wsWaveformEl.addEventListener('pointermove', (ev) => {
+                if (!scrubIsDragging) return;
+                try {
+                    const ws = ensureWaveSurfer();
+                    const frac = fracFromPointerEvent(ev, wsWaveformEl);
+                    ws.seekTo(frac);
+                } catch (e) {
+                    console.error(e);
+                }
+            });
+            const endDrag = (ev) => {
+                scrubIsDragging = false;
+                try { wsWaveformEl.releasePointerCapture(ev.pointerId); } catch (_) {}
+            };
+            wsWaveformEl.addEventListener('pointerup', endDrag);
+            wsWaveformEl.addEventListener('pointercancel', endDrag);
+        }
 
         // Scrub directly on the spectrogram (click + drag)
         if (wsSpectrogramEl) {
@@ -660,7 +1342,15 @@ window.addEventListener('DOMContentLoaded', () => {
     initializeElements();
     setupEventHandlers();
     populateSignalList();
-    loadDefaultDecoderSource();
+    
+    // Initialize CodeMirror first, then load the default code
+    // Use setTimeout to ensure all deferred scripts have fully executed
+    setTimeout(() => {
+        initDecoderEditor();
+        loadDefaultDecoderSource();
+        loadApiReference();
+    }, 0);
+    
     updateStatus('Starting Python worker...');
     updateProgress(5, 'Starting Python...');
     ensureComputeWorker();

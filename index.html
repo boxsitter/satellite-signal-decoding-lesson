@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NOAA Satellite Signal Decoder</title>
+    <title>Signal Decoder</title>
     <script src="coi-serviceworker.js"></script>
     <!-- PyScript removed: compute runs in `pyodide_worker.js` worker. -->
 
@@ -16,218 +16,147 @@
     <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/python/python.min.js" defer></script>
 
+    <!-- JSZip for creating zip files -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js" defer></script>
+
+    <!-- Application styles -->
+    <link rel="stylesheet" href="styles.css">
+
     <script src="web_interface.js" defer></script>
-    <style>
-        body {
-            font-family: monospace;
-            max-width: 1200px;
-            margin: 20px auto;
-            padding: 20px;
-        }
-        .section {
-            margin: 20px 0;
-            padding: 15px;
-            border: 1px solid #ccc;
-        }
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-        button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        select {
-            padding: 8px;
-            font-size: 14px;
-            margin: 5px;
-        }
-        #status {
-            margin: 10px 0;
-            padding: 10px;
-            background: #f0f0f0;
-            min-height: 40px;
-        }
-        #output-image {
-            max-width: 100%;
-            margin-top: 10px;
-            border: 1px solid #ddd;
-        }
-        .hidden {
-            display: none;
-        }
-        #progress-container {
-            width: 100%;
-            background-color: #e0e0e0;
-            border-radius: 4px;
-            margin-top: 10px;
-            height: 30px;
-            position: relative;
-            overflow: hidden;
-        }
-        #progress-bar {
-            height: 100%;
-            background-color: #4CAF50;
-            width: 0%;
-            transition: width 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 12px;
-        }
-        #progress-details {
-            margin-top: 5px;
-            font-size: 12px;
-            color: #666;
-        }
-
-        .audio-controls {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            flex-wrap: wrap;
-            margin-top: 10px;
-        }
-
-        .audio-controls button {
-            padding: 6px 12px;
-        }
-
-        .audio-controls input[type="range"] {
-            min-width: 320px;
-            flex: 1;
-        }
-
-        .audio-time {
-            min-width: 140px;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .viz {
-            width: 100%;
-            border: 1px solid #ddd;
-            background: #fff;
-            margin-top: 10px;
-        }
-
-        .ws-container {
-            width: 100%;
-            border: 1px solid #ddd;
-            background: #fff;
-            margin-top: 10px;
-            position: relative;
-        }
-
-        .ws-playhead {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: #e11d48;
-            opacity: 0.9;
-            transform: translateX(-1px);
-            pointer-events: none;
-            z-index: 20;
-        }
-
-        .viz-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        @media (max-width: 900px) {
-            .viz-row { grid-template-columns: 1fr; }
-        }
-
-        .editor-toolbar {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            align-items: center;
-            margin: 8px 0;
-        }
-
-        .CodeMirror {
-            border: 1px solid #ddd;
-            height: 360px;
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            font-size: 12px;
-        }
-    </style>
 </head>
 <body>
-    <h1>NOAA Satellite Signal Decoder</h1>
-    
-    <div class="section">
-        <h2>1. Select WAV File</h2>
-        <select id="signal-selector">
-            <option value="">-- Select a signal file --</option>
-        </select>
-        <button id="load-signal-btn" disabled>Load Signal</button>
-
-        <h3>Audio Viewer</h3>
-        <audio id="audio-player" class="hidden" preload="metadata"></audio>
-        <div class="audio-controls">
-            <button id="audio-toggle-btn" disabled>Play</button>
-            <input id="audio-scrub" type="range" min="0" max="1" step="0.001" value="0" disabled>
-            <div class="audio-time" id="audio-time">0:00 / 0:00</div>
-
-            <label style="display:flex; align-items:center; gap:8px; margin-left:10px;">
-                <span>Volume</span>
-                <input id="volume-slider" type="range" min="0" max="100" step="1" value="50" style="width:140px;">
-                <span id="volume-value" style="min-width:44px; text-align:right;">50%</span>
-            </label>
-
-            <label style="display:flex; align-items:center; gap:8px; margin-left:10px;">
-                <input id="less-annoying" type="checkbox" checked>
-                <span>Low pass filter (less annoying, only affects playback)</span>
-            </label>
-        </div>
-
-        <div class="viz-row">
-            <div>
-                <div>Waveform (click to seek)</div>
-                <div id="ws-waveform" class="ws-container" style="height:160px"></div>
+    <!-- Main split layout -->
+    <div class="main-split">
+        <!-- Left Panel: Audio & Decoder -->
+        <div class="left-panel">
+            <div class="panel-tabs">
+                <button class="panel-tab active" onclick="switchLeftPanel('audio')">Signal Input</button>
+                <button class="panel-tab" onclick="switchLeftPanel('decoder')">Decoder Workspace</button>
+                <div class="panel-actions">
+                    <button id="apply-decoder-btn" class="panel-action-btn" disabled>▶ Run Decoder</button>
+                    <button id="reset-decoder-btn" class="panel-action-btn decoder-only" disabled>↻ Reset</button>
+                </div>
             </div>
-            <div>
-                <div>Spectrogram (frequency over time)</div>
-                <div id="ws-spectrogram" class="ws-container" style="height:160px"></div>
+            
+            <!-- Audio Panel -->
+            <div id="audio-panel" class="panel-content active">
+                <div class="section">
+                    <h2>Select and Load WAV File</h2>
+                    <select id="signal-selector">
+                        <option value="">-- Select a signal file --</option>
+                    </select>
+                    <button id="load-signal-btn" disabled>Load Signal</button>
+
+                    <div id="audio-viewer-container" class="audio-viewer-container">
+                        <div id="audio-viewer-loading" class="audio-viewer-loading hidden">
+                            <div class="spinner"></div>
+                            <div style="color: #666; font-size: 14px;">Loading audio and generating visualizations...</div>
+                        </div>
+                        <div id="audio-viewer-content" class="audio-viewer-content">
+                            <audio id="audio-player" class="hidden" preload="metadata"></audio>
+                            
+                            <h3>Playback Controls</h3>
+                            <div class="audio-controls">
+                                <button id="audio-toggle-btn" disabled>Play</button>
+                                <input id="audio-scrub" type="range" min="0" max="1" step="0.001" value="0" disabled>
+                                <div class="audio-time" id="audio-time">0:00 / 0:00</div>
+                                <label style="display:flex; align-items:center; gap:8px; margin-left:10px;">
+                                    <span>Volume</span>
+                                    <input id="volume-slider" type="range" min="0" max="100" step="1" value="25" style="width:140px;">
+                                    <span id="volume-value" style="min-width:44px; text-align:right;">50%</span>
+                                </label>
+                            </div>
+                            <div class="audio-controls" style="margin-top: 8px;">
+                                <label style="display:flex; align-items:center; gap:8px;">
+                                    <input id="less-annoying" type="checkbox" checked>
+                                    <span>Low pass filter (less annoying, only affects playback)</span>
+                                </label>
+                            </div>
+
+                            <!-- Nested Tabs for Visualizers -->
+                            <div class="nested-tabs">
+                                <button class="nested-tab active" onclick="switchAudioSubTab('audio-viz')">Audio Visualizers</button>
+                                <button class="nested-tab" onclick="switchAudioSubTab('data-viz')">Data Visualizers</button>
+                            </div>
+
+                            <!-- Audio Visualizers Tab -->
+                            <div id="audio-viz-tab" class="nested-tab-content active">
+                                <div class="viz-row">
+                                    <div>
+                                        <div>Waveform (click to seek)</div>
+                                        <div id="ws-waveform" class="ws-container" style="height:160px"></div>
+                                    </div>
+                                    <div>
+                                        <div>Spectrogram (frequency over time)</div>
+                                        <div id="ws-spectrogram" class="ws-container" style="height:160px"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Data Visualizers Tab -->
+                            <div id="data-viz-tab" class="nested-tab-content">
+                                <h3>Preprocessed Signal Data</h3>
+                                <div id="signal-stats" class="signal-stats"></div>
+                                
+                                <div style="margin: 20px 0; display: flex; align-items: center; gap: 15px;">
+                                    <label style="font-weight: bold;">Zoom:</label>
+                                    <input id="signal-zoom-slider" type="range" min="1000" max="50000" step="1000" value="8000" style="flex: 1; max-width: 300px;">
+                                    <span id="signal-zoom-label" style="min-width: 120px; font-family: monospace;">8,000 samples</span>
+                                </div>
+                                
+                                <h3>Signal Window (50,000 samples centered at playhead)</h3>
+                                <canvas id="signal-canvas" width="800" height="300"></canvas>
+                                
+                                <h3>Raw Data (100 values at playhead position)</h3>
+                                <pre id="signal-raw-sample" class="signal-raw-sample"></pre>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Decoder Panel -->
+            <div id="decoder-panel" class="panel-content">
+                <div class="editor-container">
+                    <textarea id="decoder-code" spellcheck="false"></textarea>
+                </div>
             </div>
         </div>
-    </div>
-
-    <div class="section">
-        <h2>2. Mission Control (Live Python)</h2>
-        <p>Edit the decoder instructions below and run the mission to reveal the image. Code is loaded from <code>mission_control.py</code>.</p>
-        <div class="editor-toolbar">
-            <button id="apply-decoder-btn" disabled>Run Mission</button>
-            <button id="reset-decoder-btn" disabled>Reset Mission</button>
-            <span id="decoder-status" style="color:#666;"></span>
+        
+        <!-- Right Panel: Terminal & Output -->
+        <div class="right-panel">
+            <div class="panel-tabs">
+                <button class="panel-tab active" onclick="switchRightPanel('output')">
+                    Image Output
+                    <span id="output-notification" class="tab-notification hidden"></span>
+                </button>
+                <button class="panel-tab" onclick="switchRightPanel('terminal')">Console</button>                <button class="panel-tab" onclick="switchRightPanel('api')">Decoder API (Read-Only)</button>
+            </div>
+            
+            <!-- Output Panel -->
+            <div id="output-panel" class="panel-content active">
+                <div class="output-container">
+                    <div id="output-empty" class="output-empty">
+                        <p>No image decoded yet.</p>
+                        <p>Run the decoder to see the output here.</p>
+                    </div>
+                    <img id="output-image" class="hidden" alt="Decoded satellite image">
+                    <button id="export-btn" class="export-btn hidden" onclick="exportProject()">Export</button>
+                </div>
+            </div>
+            
+            <!-- Terminal Panel -->
+            <div id="terminal-panel" class="panel-content">
+                <pre id="mission-log"></pre>
+            </div>
+            
+            <!-- API Reference Panel -->
+            <div id="api-panel" class="panel-content">
+                <div class="editor-container">
+                    <textarea id="api-reference" spellcheck="false" readonly></textarea>
+                </div>
+            </div>
         </div>
-        <textarea id="decoder-code" spellcheck="false"></textarea>
-    </div>
-
-    <div class="section">
-        <h2>Mission Log</h2>
-        <pre id="mission-log" style="background: #f0f0f0; padding: 10px; height: 150px; overflow-y: scroll; border: 1px solid #ccc; font-size: 12px;"></pre>
-    </div>
-
-    <div class="section">
-        <h2>Status</h2>
-        <div id="status">Ready</div>
-        <div id="progress-container" class="hidden">
-            <div id="progress-bar"></div>
-        </div>
-        <div id="progress-details" class="hidden"></div>
-    </div>
-
-    <div class="section">
-        <h2>Output Image</h2>
-        <img id="output-image" class="hidden" alt="Decoded satellite image">
     </div>
 
     <!-- Python execution happens in `pyodide_worker.js` via a dedicated Web Worker. -->

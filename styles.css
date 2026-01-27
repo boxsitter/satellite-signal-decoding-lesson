@@ -1,0 +1,522 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: monospace;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Main split container - always visible */
+.main-split {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+    padding: 0 0px;
+}
+
+/* Left panel with tabs */
+.left-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+}
+
+/* Right panel with tabs */
+.right-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-width: 0;
+}
+
+/* Add separator only before output panel */
+#output-panel {
+    border-left: 2px solid #ccc;
+}
+
+/* Light gray background for audio panel */
+#audio-panel {
+    background: #f5f5f5;
+}
+
+/* Panel tabs (for left and right panels) */
+.panel-tabs {
+    display: flex;
+    background: #2c3e50;
+    border-bottom: 2px solid #34495e;
+    align-items: center;
+}
+
+/* Right panel tabs aligned to the right */
+.right-panel .panel-tabs {
+    justify-content: flex-end;
+}
+
+/* Panel action buttons container (right side of header) */
+.panel-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+    padding-right: 10px;
+}
+
+/* Panel action buttons styling */
+.panel-action-btn {
+    padding: 6px 16px;
+    margin: 0;
+    font-size: 13px;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.panel-action-btn:hover:not(:disabled) {
+    background: #2980b9;
+}
+
+.panel-action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #95a5a6;
+}
+
+/* Hide decoder-only buttons when audio panel is active */
+#audio-panel.active ~ .panel-tabs .decoder-only,
+.left-panel:has(#audio-panel.active) .decoder-only {
+    display: none;
+}
+
+.panel-tab {
+    padding: 10px 20px;
+    background: #2c3e50;
+    color: #95a5a6;
+    border: none;
+    border-right: 1px solid #34495e;
+    cursor: pointer;
+    font-family: monospace;
+    font-size: 13px;
+    transition: background 0.2s;
+}
+
+.panel-tab:hover {
+    background: #34495e;
+    color: #ecf0f1;
+}
+
+.panel-tab.active {
+    background: #ecf0f1;
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+/* Notification dot for tab alerts */
+.tab-notification {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #e74c3c;
+    border-radius: 50%;
+    margin-left: 6px;
+    vertical-align: middle;
+}
+
+.tab-notification.hidden {
+    visibility: hidden;
+}
+
+/* Panel content areas */
+.panel-content {
+    display: none;
+    flex: 1;
+    overflow: auto;
+    flex-direction: column;
+}
+
+.panel-content.active {
+    display: flex;
+}
+
+.tabs {
+    padding: 0px 200px;
+    display: flex;
+    background: #34495e;
+    border-bottom: 2px solid #2c3e50;
+}
+
+.section {
+    padding: 0px 50px;
+    overflow: auto;
+    flex: 1;
+}
+
+button {
+    padding: 10px 20px;
+    margin: 5px;
+    font-size: 14px;
+    cursor: pointer;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+button:hover {
+    background: #2980b9;
+}
+
+button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #95a5a6;
+}
+
+select {
+    padding: 8px;
+    font-size: 14px;
+    margin: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+#status {
+    padding: 10px;
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    margin: 10px;
+}
+
+#output-image {
+    max-width: 100%;
+    max-height: 80vh;
+    margin: 20px auto;
+    display: block;
+    border: 1px solid #ddd;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+.hidden {
+    display: none !important;
+}
+
+#progress-container {
+    background-color: #e0e0e0;
+    border-radius: 4px;
+    margin: 10px;
+    height: 30px;
+    overflow: hidden;
+}
+
+#progress-bar {
+    height: 100%;
+    background-color: #4CAF50;
+    width: 0%;
+    transition: width 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+}
+
+#progress-details {
+    margin: 5px 10px;
+    font-size: 12px;
+    color: #666;
+}
+
+.audio-controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 10px;
+}
+
+.audio-controls button {
+    padding: 6px 12px;
+    min-width: 70px;
+}
+
+.audio-controls input[type="range"] {
+    min-width: 320px;
+    flex: 1;
+}
+
+.audio-time {
+    min-width: 140px;
+    font-variant-numeric: tabular-nums;
+}
+
+.viz {
+    width: 100%;
+    border: 1px solid #ddd;
+    background: #fff;
+    margin-top: 10px;
+}
+
+.ws-container {
+    width: 100%;
+    border: 1px solid #ddd;
+    background: #fff;
+    margin-top: 10px;
+    position: relative;
+}
+
+.ws-playhead {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e11d48;
+    opacity: 0.9;
+    transform: translateX(-1px);
+    pointer-events: none;
+    z-index: 20;
+}
+
+.viz-row {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+@media (max-width: 900px) {
+    .main-split { 
+        flex-direction: column; 
+    }
+    .left-panel { 
+        border-right: none; 
+        border-bottom: 2px solid #ccc; 
+    }
+}
+
+.editor-container {
+    flex: 1;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.CodeMirror {
+    height: 100%;
+    flex: 1;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    font-size: 13px;
+    border: none;
+}
+
+textarea#decoder-code {
+    flex: 1;
+    width: 100%;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 13px;
+    border: none;
+    padding: 10px;
+    resize: none;
+}
+
+#mission-log {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 15px;
+    margin: 0;
+    flex: 1;
+    overflow-y: auto;
+    font-size: 13px;
+    font-family: 'Consolas', 'Monaco', monospace;
+}
+
+.log-header {
+    background: #f5f5f5;
+    padding: 0;
+    border-bottom: 1px solid #ddd;
+    display: flex;
+}
+
+.panel-content {
+    display: none;
+    flex: 1;
+    overflow: auto;
+    flex-direction: column;
+}
+
+.panel-content.active {
+    display: flex;
+}
+
+.output-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    flex: 1;
+    max-width: 100%;
+}
+
+.output-empty {
+    color: #999;
+    font-size: 18px;
+    text-align: center;
+}
+
+.export-btn {
+    margin-top: 20px;
+    padding: 10px 20px;
+    font-size: 14px;
+    background: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.export-btn:hover {
+    background: #229954;
+}
+
+.signal-data-container {
+    padding: 20px;
+    overflow: auto;
+    flex: 1;
+}
+
+.signal-stats {
+    background: #f5f5f5;
+    padding: 15px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    font-family: monospace;
+    line-height: 1.8;
+}
+
+.signal-stats div {
+    margin: 5px 0;
+}
+
+#signal-canvas {
+    display: block;
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    background: white;
+    max-width: 100%;
+    height: auto;
+}
+
+.signal-raw-sample {
+    background: #1e1e1e;
+    color: #d4d4d4;
+    padding: 15px;
+    border-radius: 4px;
+    font-size: 12px;
+    line-height: 1.6;
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: 400px;
+    min-height: fit-content;
+}
+
+.audio-viewer-container {
+    position: relative;
+    min-height: 400px;
+}
+
+/* Nested tabs within audio panel */
+.nested-tabs {
+    display: flex;
+    background: #f0f0f0;
+    border-bottom: 2px solid #ddd;
+    margin-top: 20px;
+    border-radius: 4px 4px 0 0;
+}
+
+.nested-tab {
+    padding: 10px 20px;
+    background: #e0e0e0;
+    color: #555;
+    border: none;
+    border-right: 1px solid #ccc;
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.2s;
+}
+
+.nested-tab:first-child {
+    border-radius: 4px 0 0 0;
+}
+
+.nested-tab:hover {
+    background: #d0d0d0;
+}
+
+.nested-tab.active {
+    background: white;
+    color: #2c3e50;
+    font-weight: bold;
+}
+
+.nested-tab-content {
+    display: none;
+    padding: 20px;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    min-height: 400px;
+}
+
+.nested-tab-content.active {
+    display: flex;
+    flex-direction: column;
+}
+
+.audio-viewer-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 255, 255, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    gap: 15px;
+}
+
+.audio-viewer-loading .spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.audio-viewer-content {
+    opacity: 1;
+    transition: opacity 0.3s;
+}
+
+.audio-viewer-content.loading {
+    opacity: 0.3;
+    pointer-events: none;
+}
