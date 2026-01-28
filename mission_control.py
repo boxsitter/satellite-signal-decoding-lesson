@@ -1,3 +1,5 @@
+# Slideshow link: https://docs.google.com/presentation/d/1wemx7YUmr7gZfU9mQB7-h4rVp9Nq19IIjJS5_s3WMz8/edit?usp=sharing
+
 import decoder_api
 
 # Signal Specification:
