@@ -3,7 +3,7 @@
 
 self.window = self;
 
-const WORKER_VERSION = '2026-01-24a';
+const WORKER_VERSION = '2026-01-27b';
 
 let pyodide = null;
 let ready = false;
@@ -80,9 +80,13 @@ self.onmessage = async (event) => {
   try {
     if (msg.type === 'load_prebaked_npy') {
       // msg.npyBytes is a transferred ArrayBuffer containing a '.npy' file.
-      // We write it to 'signal1.normalized.npy' because that's what decoder_api.py expects by default.
+      // Store the filename for later use in run_mission
+      const filename = msg.filename || 'signal1.normalized.npy';
       const u8 = new Uint8Array(msg.npyBytes);
-      pyodide.FS.writeFile('/signal1.normalized.npy', u8);
+      pyodide.FS.writeFile(`/${filename}`, u8);
+      
+      // Store the filename globally so run_mission can use it
+      self.currentSignalFilename = filename;
       
       self.postMessage({ type: 'prebaked_load_done', id: msg.id });
       return;
@@ -90,6 +94,7 @@ self.onmessage = async (event) => {
 
     if (msg.type === 'run_mission') {
         const studentCode = msg.source;
+        const signalFilename = msg.signalFilename || self.currentSignalFilename || 'signal1.normalized.npy';
         
         // Write the current code to a file for debugging/persistence if needed
         pyodide.FS.writeFile('/mission_control.py', studentCode);
@@ -98,7 +103,16 @@ self.onmessage = async (event) => {
         // We ensure we are in the root directory where the files are.
         await pyodide.runPythonAsync("import os; os.chdir('/')");
         
+        // Set sys.argv so that when the student code runs with "if __name__ == '__main__'",
+        // it will pick up the correct signal filename
+        await pyodide.runPythonAsync(`
+import sys
+sys.argv = ['mission_control.py', '/${signalFilename}']
+`);
+        
+        // Run the student code - the if __name__ == "__main__" block will execute
         await pyodide.runPythonAsync(studentCode);
+    
         
         // Check if image exists and send it back
         let imageB64 = null;

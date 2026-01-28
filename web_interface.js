@@ -455,7 +455,7 @@ let workerInitFailed = false;
 let workerReqId = 0;
 const workerPending = new Map();
 // Bump this to force browsers/SW to fetch a fresh worker script.
-const WORKER_VERSION = '2026-01-14b';
+const WORKER_VERSION = '2026-01-27b';
 
 function logToMission(text) {
     if (!missionLog) return;
@@ -1059,7 +1059,10 @@ async function loadSignal() {
         currentSignalData = signalDataCopy;
 
         updateStatus(`Sending data to Mission Control...`);
-        await workerCall({ type: 'load_prebaked_npy', npyBytes }, [npyBytes]);
+        // Extract just the filename from the path
+        const filename = npyPath.split('/').pop();
+        await workerCall({ type: 'load_prebaked_npy', npyBytes, filename }, [npyBytes]);
+    
 
         updateStatus(`Mission Ready. Signal: ${selected}`);
         if (applyDecoderBtn) applyDecoderBtn.disabled = false;
@@ -1119,7 +1122,15 @@ async function runMission() {
 
         // Run the mission in the worker
         const source = getDecoderSource();
-        const resp = await workerCall({ type: 'run_mission', source });
+        // Extract just the filename from the path for the worker filesystem
+        // e.g., "signals/signal1.wav" -> "signal1.normalized.npy"
+        let signalFilename = 'signal1.normalized.npy'; // default
+        if (currentSignalPath) {
+            const npyPath = prebakedNpyPathForWav(currentSignalPath);
+            signalFilename = npyPath.split('/').pop();
+        }
+        const resp = await workerCall({ type: 'run_mission', source, signalFilename });
+    
 
         if (resp.image) {
             showImage(resp.image);
