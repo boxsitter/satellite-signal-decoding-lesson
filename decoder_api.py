@@ -2,24 +2,6 @@ import numpy as np
 from PIL import Image
 import os
 
-# NOAA APT (Automatic Picture Transmission) Signal Format Constants
-#
-# APT signals transmit image data as amplitude-modulated analog signals.
-# Each scan line contains a synchronization pattern followed by pixel data.
-# The sync pattern is a known sequence that we correlate against to find line boundaries.
-#
-# SYNC_A_PATTERN: 39-byte synchronization marker transmitted before each scan line.
-# This is the standard NOAA "Sync A" pattern - a square wave alternating between
-# black (0) and white (255) with a specific sequence defined by the APT specification.
-# Pattern: 7 cycles of (0,0,255,255), followed by a distinctive (0,0,255,255,0,0,0,0,0,0,0,0) tail.
-SYNC_A_PATTERN = np.array([
-    0, 0, 255, 255, 0, 0, 255, 255,
-    0, 0, 255, 255, 0, 0, 255, 255,
-    0, 0, 255, 255, 0, 0, 255, 255,
-    0, 0, 255, 255, 0, 0, 0, 0, 0,
-    0, 0, 0
-], dtype=np.float32) - 128  # Centered around zero (range: -128 to +127) for correlation
-
 # Correlation Threshold for Sync Detection
 # 
 # When correlating the sync pattern against the signal, a perfect match yields
@@ -58,7 +40,7 @@ def load_signal_data(filename="signal1.normalized.npy"):
         numpy.ndarray: 1D array of pixel intensity values (0-255, dtype=float64)
                        Returns empty array on error
     """
-    print(f" [SYSTEM] Accessing data archive: {filename}")
+    print(f" [SYSTEM] Accessing data: {filename}")
     
     if not os.path.exists(filename):
         print(" [ERROR] CRITICAL: Signal data file not found.")
@@ -77,46 +59,7 @@ def load_signal_data(filename="signal1.normalized.npy"):
         return np.array([])
 
 
-def check_for_sync(signal_data, pointer):
-    """
-    Performs correlation-based sync pattern detection at a specific position.
-    
-    Correlation is the standard method for finding known patterns in noisy signals.
-    We compute the dot product between the expected sync pattern and the signal
-    segment, which yields a high value when the patterns align.
-    
-    Mathematical operation:
-        correlation = Σ(pattern[i] * signal[i]) for i in pattern_length
-    
-    Both pattern and signal are centered around zero (range -128 to +127) to
-    maximize correlation magnitude and eliminate DC bias effects.
-    
-    Args:
-        signal_data (numpy.ndarray): Complete signal array (0-255 range)
-        pointer (int): Index position to test for sync marker
-        
-    Returns:
-        bool: True if correlation exceeds threshold, False otherwise
-    """
-    # Boundary check: ensure we don't read past array end
-    if pointer + len(SYNC_A_PATTERN) > len(signal_data):
-        return False
-
-    # Extract the signal segment to test (already in numpy format)
-    snippet = signal_data[pointer : pointer + len(SYNC_A_PATTERN)]
-    
-    # Center the signal data around zero to match the sync pattern representation
-    # This converts from [0, 255] to [-128, 127] range
-    snippet_centered = snippet - 128
-    
-    # Compute dot product (equivalent to cross-correlation at zero lag)
-    # High values indicate strong pattern match
-    match_score = np.dot(SYNC_A_PATTERN, snippet_centered)
-    
-    return match_score > SYNC_DETECTION_THRESHOLD
-
-
-def find_best_sync_in_window(signal_data, start_pointer, window_size=2000):
+def look_for_sync_in_window(signal_data, center_pointer, window_size=2000, sync_pattern=None):
     """
     Locates the optimal sync marker position within a search window using vectorized correlation.
     
@@ -139,15 +82,27 @@ def find_best_sync_in_window(signal_data, start_pointer, window_size=2000):
     
     Args:
         signal_data (numpy.ndarray): Complete signal array
-        start_pointer (int): Beginning of search window
+        center_pointer (int): Center of search window
         window_size (int): Number of samples to search (default 2000 ≈ one scan line period)
+        sync_pattern (list or numpy.ndarray): Sync pattern to search for (defaults to SYNC_A_PATTERN)
         
     Returns:
         int or None: Index of best sync position, or None if no correlation exceeds threshold
     """
-    # Calculate search boundaries, ensuring we don't exceed array bounds
-    sync_len = len(SYNC_A_PATTERN)
-    end_pointer = min(start_pointer + window_size, len(signal_data) - sync_len)
+    # Convert to numpy array and center around zero for correlation
+    sync_pattern_np = np.array(sync_pattern, dtype=np.float32) - 128
+    
+    # Calculate search boundaries centered around the pointer
+    sync_len = len(sync_pattern_np)
+    
+    # Calculate ideal window bounds (centered on center_pointer)
+    half_window = window_size // 2
+    start_pointer = center_pointer - half_window
+    end_pointer = center_pointer + half_window
+    
+    # Clamp to valid array bounds
+    start_pointer = max(0, start_pointer)
+    end_pointer = min(end_pointer, len(signal_data) - sync_len)
     
     if end_pointer <= start_pointer:
         return None
@@ -161,7 +116,7 @@ def find_best_sync_in_window(signal_data, start_pointer, window_size=2000):
     # Compute correlation at all possible positions simultaneously
     # mode='valid': only compute where pattern fully overlaps with signal
     # This returns an array of correlation values, one for each tested position
-    correlations = np.correlate(window_centered, SYNC_A_PATTERN, mode='valid')
+    correlations = np.correlate(window_centered, sync_pattern_np, mode='valid')
     
     # Handle edge case of empty correlation array
     if len(correlations) == 0:
@@ -219,9 +174,7 @@ def display_image(image_rows):
             length = min(len(row), width)
             img_array[i, :length] = row[:length]
 
-        # Extract Channel A (visible light) by slicing columns
-        # This removes sync markers, telemetry, and Channel B data
-        print(" [SYSTEM] Extracting Image A (visible light channel)...")
+        # Apply crop
         img_array = img_array[:, IMAGE_A_START:IMAGE_A_END]
         print(f" [SYSTEM] Image A size: {img_array.shape[1]} x {img_array.shape[0]} pixels")
 

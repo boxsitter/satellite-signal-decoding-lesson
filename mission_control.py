@@ -1,98 +1,91 @@
 import decoder_api
 
-# ==============================================================================
-# MISSION CONTROL: SATELLITE DATA DECODER
-# OPERATOR MANUAL SECTION 1.2
-# ==============================================================================
-#
-# INSTRUCTIONS:
-# Your mission is to decode the data stream from the NOAA weather satellite.
-# The signal has already been demodulated by the ground station antenna
-# and saved as a sequence of sensor values (0-255).
-#
-# However, the decoding script below is corrupted.
-# Use the "Satellite Transmission Manual" to fix the bugs and reveal the image.
-# ==============================================================================
+# Signal Specification:
+# Channel A (1040 pixels) + Channel B (1040 pixels)
+ROW_WIDTH = 1000
 
+# Define a search window for sync detection
+SEARCH_WINDOW = 67
 
-# --- CONFIGURATION ------------------------------------------------------------
+# Sync pattern to look for
+SYNC_A_PATTERN = [
+    0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 255, 0, 0, 0, 0, 0,
+    0, 0, 255, 255, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 255, 255, 0,
+    0, 0, 0
+]
 
-# [MANUAL CHECK REQUIRED]
-# According to the NOAA APT specification, how wide (in pixels) is one 
-# single line of video data?
-ROW_WIDTH = 900  # <--- HINT: This value looks suspicious...
-
-
-def run_decoding_sequence():
-    print("---------------------------------------")
-    print(" INITIALIZING DECODING SEQUENCE...")
-    print("---------------------------------------")
+def run_decoding_sequence(signal_file=None):
+    print("INITIALIZING DECODING SEQUENCE...")
 
     # 1. LOAD SIGNAL
-    # We fetch the clean stream of sensor numbers from the daily log file.
-    sensor_data = decoder_api.load_signal_data()
-    print(f" > Signal Loaded. Total data points: {len(sensor_data)}")
+    # If you have already selected a signal on the website,
+    # the data will be loaded by calling decoder_api.load_signal_data()
+
+    # The signal data is an array of values from 0-255.
+    # It looks like: [5, 134, 253, 255, 0, 2, 214, 200, ...]
+    signal_data = decoder_api.load_signal_data(signal_file)
+    print(f"Signal Loaded. Total data points: {len(signal_data)}")
 
     # 2. PREPARE IMAGE
-    # We create an empty list to hold our stacked lines of video.
+    # Here we are initializing an empty list to hold each row of the final image.
     decoded_image = []
 
     # 3. SCANNING LOOP
-    # We use a 'pointer' to track exactly which number we are looking at.
+    # We are creating an image, a 2D array of pixel values out of a 1D array of signal data.
+    # But since the data is a single line, we need to determine when to start a new row.
+    # We know that each row of the signal starts with a specific pattern (the sync marker).
+    # We are going to treat each value in the data as a pixel with brightness from 0-255, but
+    # when we find the sync marker, we know a new row is starting.
     pointer = 0
-    
-    print(" > Scanning stream for synchronization markers...")
 
-    # Keep scanning until we reach the end of the data stream
-    while pointer < len(sensor_data) - ROW_WIDTH:
+    while pointer < len(signal_data):
+        sync_position = decoder_api.look_for_sync_in_window(
+            signal_data, # Data to search
+            pointer, # The center point to search around
+            SEARCH_WINDOW, # How many total samples to search (+/- from center)
+            SYNC_A_PATTERN # The sync pattern to search for
+        )
 
-        # Use the API to check if the current spot marks the start of a line.
-        # It looks for a specific "beep-beep-beep" pattern (Sync A).
-        found_sync = decoder_api.check_for_sync(sensor_data, pointer)
-
-        if found_sync:
-            # --- SYNC DETECTED! -----------------------------------------------
-            # We found the start of a line. We need to "snip" out the image data.
-            
-            # [MANUAL CHECK REQUIRED]
-            # We need to slice out exactly one full row of pixels.
-            # Currently, this is only grabbing 50 pixels. 
-            end_of_row = pointer + 50 
-            
-            # Slice the data from the list
-            pixel_row = sensor_data[pointer : end_of_row]
-            
-            # Add this row to our final image
+        if sync_position is not None:
+            # We found a sync marker!
+            # That means that the next ROW_WIDTH pixels are a new row of image data.
+            # We will add that row to our image.
+            end_of_row = sync_position + ROW_WIDTH
+            pixel_row = signal_data[sync_position : end_of_row]
             decoded_image.append(pixel_row)
             
-            # Move our pointer past the row we just processed so we don't read it again.
-            pointer += ROW_WIDTH
-
+            # HINT: Where should we move the pointer to continue searching?
+            pointer += 2000
+            
         else:
-            # --- NO SYNC FOUND ------------------------------------------------
-            # The current spot is just random sensor data, not a start marker.
+            # No sync found. This can mean a few things:
+            # 1. We are at the end of the data
+            # 2. The signal is too weak to detect sync on this line
+            # 3. Our prediction was off due to complicated science stuff (doppler shift, clock drift, etc)
+
+            # We'll add the current segment as a row and try again with the next one
             
-            # [MANUAL CHECK REQUIRED]
-            # We need to move the pointer forward to check the next spot.
-            
-            # DIAGNOSTIC MODE: Capturing raw data to allow visual debugging.
-            # This produces a noisy/garbled image if synchronization fails.
-            raw_row = sensor_data[pointer : pointer + ROW_WIDTH]
-            decoded_image.append(raw_row)
-            
-            pointer += ROW_WIDTH
+            print(f"Expected sync not found at pointer {pointer}.")
+
+            end_of_row = pointer + ROW_WIDTH
+            pixel_row = signal_data[pointer : end_of_row]
+            decoded_image.append(pixel_row)
+            pointer = end_of_row
 
     
     # 4. DISPLAY RESULTS
-    print("---------------------------------------")
-    print(f" DECODING COMPLETE.")
-    print(f" Recovered {len(decoded_image)} lines of video data.")
-    print("---------------------------------------")
+    print("DECODING COMPLETE.")
+    print(f"Recovered {len(decoded_image)} lines of video data.")
     
-    # Send the list of rows to the screen
     decoder_api.display_image(decoded_image)
 
-
-# Run the mission
+# Entry point for script
+# Students may ignore this section
 if __name__ == "__main__":
-    run_decoding_sequence()
+    import sys
+    
+    # Allow optional command line argument for signal file
+    signal_file = sys.argv[1] if len(sys.argv) > 1 else None
+    run_decoding_sequence(signal_file)
