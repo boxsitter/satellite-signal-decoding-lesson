@@ -1,5 +1,5 @@
 # satellite-signal-decoding-lesson
-A lesson for K-16 students with intermediate skills in Python.
+A lesson for K-12 students with intermediate skills in Python.
 
 In this lesson, students act as mission control operators tasked with decoding a transmission from a NOAA weather satellite to identify signs any extraterrestrial alien activity surrounding earth and verify the safety of the planet. This repo contains a simple website that hosts a raw satellite signal (a pre-recorded audio file) and an embedded Python environment. The core challenge is that the incoming data stream is not being processed correctly by the incomplete (the full decoder code is intentionally broken in various ways for students to fix) code given to students. The output image at the start of the activity is garbled and indiscernible. Students must edit a real Python script to fix various bugs. They are given a simplified manual, viewable in the website, with information on how the analog image in encoded into the radio signal and how it must be decoded. Using the manual, they must apply their knowledge of Python scripting to correctly decode the signal and display an image of earth.
 
